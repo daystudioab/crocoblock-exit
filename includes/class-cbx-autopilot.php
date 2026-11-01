@@ -531,6 +531,11 @@ class CBX_Autopilot {
 	/** Konvertering i omgångar (samma kod som steg 6). */
 	protected static function step_convert( array $run, $offset ) {
 		if ( 0 === $offset ) {
+			// Innan något ändras: vilka dokument syns inte ens nu på sin adress?
+			// (T.ex. en mall vars sida inte gick att gissa, eller en sida vars
+			// adress går till inloggningen.) De kan inte HTML-kontrolleras
+			// efteråt heller, och ska inte stoppa körningen.
+			self::mark_unreachable();
 			CBX_Converter::start( 'convert' );
 			self::flag( 'converted' );
 		}
@@ -552,6 +557,50 @@ class CBX_Autopilot {
 	 *
 	 * @return string[]|null Problem.
 	 */
+	/**
+	 * Flaggar jobb vars dokument inte syns på sin adress redan FÖRE
+	 * konverteringen. HTML-kontrollen efteråt hoppar över dem – frånvaron
+	 * beror på adressen, inte på konverteringen.
+	 *
+	 * @return int Antal flaggade.
+	 */
+	public static function mark_unreachable() {
+		$run = self::run();
+		if ( empty( $run['jobs'] ) ) {
+			return 0;
+		}
+		$pages = array();
+		foreach ( $run['jobs'] as $key => $job ) {
+			if ( '' !== $job['original_url'] && ! empty( $job['widgets'] ) ) {
+				$pages[ $job['original_url'] ][] = $key;
+			}
+		}
+		$n = 0;
+		foreach ( $pages as $url => $keys ) {
+			$res = wp_remote_get( add_query_arg( array( 'cbx_check' => time() ), $url ), array( 'timeout' => 15, 'redirection' => 3, 'sslverify' => false ) );
+			if ( is_wp_error( $res ) ) {
+				continue;
+			}
+			$html = (string) wp_remote_retrieve_body( $res );
+			foreach ( $keys as $key ) {
+				if ( ! self::root_in_html( $run['jobs'][ $key ]['original_root'], $html ) ) {
+					$run['jobs'][ $key ]['unreachable'] = true;
+					$n++;
+				}
+			}
+		}
+		self::save_run( $run );
+		return $n;
+	}
+
+	/** Finns dokumentets rot (data-elementor-id) i HTML-koden? */
+	protected static function root_in_html( $root_sel, $html ) {
+		if ( ! preg_match( '/data-elementor-id="?(\d+)/', (string) $root_sel, $m ) ) {
+			return true;
+		}
+		return (bool) preg_match( '/data-elementor-id=["\']?' . $m[1] . '(?!\d)/', $html );
+	}
+
 	public static function http_check( array $jobs ) {
 		$problems = array();
 		$pages    = array();
@@ -579,8 +628,15 @@ class CBX_Autopilot {
 				continue;
 			}
 			foreach ( $page_jobs as $job ) {
-				if ( $job['context'] ) {
-					continue; // Mallen kan gälla andra inlägg än det som hämtades.
+				if ( $job['context'] || ! empty( $job['unreachable'] ) || empty( $job['widgets'] ) ) {
+					// Innehållsberoende mall, eller ett dokument som inte syntes
+					// på adressen ens före konverteringen – bara svars- och
+					// felkontrollen ovan gäller.
+					continue;
+				}
+				if ( ! self::root_in_html( $job['original_root'], $html ) ) {
+					$problems[] = sprintf( '%s visas inte längre på %s.', $job['label'], $url );
+					continue;
 				}
 				$missing = array();
 				foreach ( $job['widgets'] as $wid ) {

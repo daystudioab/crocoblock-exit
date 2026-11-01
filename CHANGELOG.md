@@ -1,5 +1,8 @@
 # Ändringar
 
+## 1.6.1
+- Genomför stoppas inte längre av dokument som inte går att nå på någon egen adress (t.ex. en mall vars sida inte kan gissas, eller en sida vars adress går till inloggningen). De kontrollerades aldrig före konverteringen och hoppas nu över i HTML-kontrollen efteråt – ett dokument som syntes före konverteringen men inte efter stoppar fortfarande.
+
 ## 1.6.0
 - Uppdateringar från GitHub: nya versioner syns under Tillägg som vanliga uppdateringar ("Uppdatera nu" och automatiska uppdateringar). En version publiceras först när alla tester har gått igenom.
 

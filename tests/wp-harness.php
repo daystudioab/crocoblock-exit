@@ -233,7 +233,11 @@ function wp_remote_get( $u, $a = array() ) {
 			return $res;
 		}
 	}
-	return $GLOBALS['_remote'] ?? new WP_Error( 'http', 'ingen loopback i test' );
+	$r = $GLOBALS['_remote'] ?? null;
+	if ( $r instanceof Closure ) {
+		return $r( $u );
+	}
+	return $r ?? new WP_Error( 'http', 'ingen loopback i test' );
 }
 function get_transient( $k ) { return get_option( '_transient_' . $k ); }
 function set_transient( $k, $v, $t = 0 ) { return update_option( '_transient_' . $k, $v ); }

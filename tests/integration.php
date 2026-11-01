@@ -508,10 +508,20 @@ $GLOBALS['_custom_css'] = $css_keep;
 $rep = CBX_Autopilot::last_report();
 ok( 'autopilot report saved', $rep && 'test' === $rep['mode'] && ! empty( $rep['headless'] ) );
 
-// Genomför – men den publicerade sidan saknar de nya widgetarna: allt ska återställas.
-$GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<html><body>tom</body></html>' );
+// Genomför – sidorna syntes före konverteringen men saknar sina rötter efteråt:
+// det är ett riktigt fel, och allt ska återställas.
+$all_roots = '';
+for ( $i = 1; $i <= 80; $i++ ) {
+	$all_roots .= '<div data-elementor-id="' . $i . '"></div>';
+}
+$GLOBALS['_remote'] = function ( $url ) use ( $all_roots ) {
+	// Före konverteringen (inga backuper): rötterna finns. Efter: tom sida.
+	$body = CBX_Plugin::backup_post_ids() ? 'tom' : $all_roots;
+	return array( 'code' => 200, 'body' => '<html><body>' . $body . '</body></html>' );
+};
 $r = CBX_Autopilot::run_headless( 'apply' );
 ok( 'autopilot apply: http check fails', ! $r['ok'] && 'fail' === $r['steps']['http_check']['status'] );
+ok( 'autopilot apply: failure names the document', false !== strpos( $r['steps']['http_check']['message'], 'visas inte längre' ) );
 ok( 'autopilot apply: rolled back', $r['rolled_back'] && $ap_before === get_post_meta( $start, '_elementor_data', true ) && ! CBX_Plugin::has_backup( $start ) );
 
 // Servern kan inte nå sig själv: varning, inte fel.
@@ -525,9 +535,13 @@ ok( 'autopilot http: fatal error detected', (bool) CBX_Autopilot::http_check( $a
 // Genomför med korrekt HTML och avstängning: Crocoblock får vara kvar eftersom manuella widgets finns.
 $ids = array();
 foreach ( $ap_jobs as $job ) {
+	if ( preg_match( '/data-elementor-id="(\d+)"/', $job['original_root'], $rm ) ) {
+		$ids[] = '<div data-elementor-id="' . $rm[1] . '">';
+	}
 	foreach ( $job['widgets'] as $wid ) {
 		$ids[] = '<div class="elementor-element elementor-element-' . $wid . '"></div>';
 	}
+	$ids[] = '</div>';
 }
 $GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<html><body>' . implode( '', $ids ) . '</body></html>' );
 $r = CBX_Autopilot::run_headless( 'apply', array( 'switch' => true ) );
@@ -537,6 +551,37 @@ ok( 'autopilot apply: switch refused while jet remains', 'warn' === $r['steps'][
 ok( 'autopilot rollback restores', in_array( '1 sidor återställda.', CBX_Autopilot::rollback(), true ) || ! CBX_Plugin::has_backup( $start ) );
 ok( 'autopilot rollback exact', $ap_before === get_post_meta( $start, '_elementor_data', true ) );
 unset( $GLOBALS['_remote'] );
+
+/* ---------- 7c2. Dokument som inte syns på sin adress (FACIT, Logga in) ---------- */
+
+$mk_job = function ( $key, $root, $widget, $url ) {
+	return array(
+		'key' => $key, 'id' => (int) $root, 'label' => $key, 'type' => 'page', 'widgets' => array( $widget ),
+		'manual' => 0, 'context' => false, 'original_url' => $url, 'original_root' => '[data-elementor-id="' . $root . '"]',
+		'preview_url' => $url, 'preview_root' => '', 'verify_root' => '', 'verify_root_switch' => '', 'note' => '',
+	);
+};
+update_option( CBX_Autopilot::OPT_RUN, array(
+	'mode' => 'apply', 'opts' => array(), 'steps' => array(), 'docs' => array(), 'flags' => array(), 'messages' => array(),
+	'jobs' => array(
+		'doc-901' => $mk_job( 'doc-901', 901, 'aa11aa1', 'https://test.se/sida/' ),
+		'doc-902' => $mk_job( 'doc-902', 902, 'bb22bb2', 'https://test.se/sida/' ), // visas inte där (som FACIT/Logga in)
+	),
+) );
+$page_good = array( 'code' => 200, 'body' => '<div data-elementor-id="901"><div class="elementor-element-aa11aa1"></div></div>' );
+$GLOBALS['_remote'] = $page_good;
+ok( 'unreachable: pre-check flags the invisible document', 1 === CBX_Autopilot::mark_unreachable() );
+$jobs_now = array_values( CBX_Autopilot::run()['jobs'] );
+ok( 'unreachable: flag set on the right job', empty( $jobs_now[0]['unreachable'] ) && ! empty( $jobs_now[1]['unreachable'] ) );
+ok( 'http check: invisible document is skipped, visible one passes', array() === CBX_Autopilot::http_check( $jobs_now ) );
+$GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<div data-elementor-id="901">trasig</div>' );
+$pr = CBX_Autopilot::http_check( $jobs_now );
+ok( 'http check: missing widget still fails', 1 === count( $pr ) && false !== strpos( $pr[0], 'element saknas' ) );
+$GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<div>helt annat</div>' );
+$pr = CBX_Autopilot::http_check( $jobs_now );
+ok( 'http check: vanished root fails for previously visible doc only', 1 === count( $pr ) && false !== strpos( $pr[0], 'doc-901 visas inte längre' ), $pr );
+unset( $GLOBALS['_remote'] );
+delete_option( CBX_Autopilot::OPT_RUN );
 
 /* ---------- 7d. Förenklad arbetsgång: Stäng av, Ångra allt ---------- */
 
