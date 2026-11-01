@@ -324,9 +324,18 @@ class CBX_Autopilot {
 	protected static function doc_row( $id, array $log, $changed ) {
 		$widgets = array();
 		$manual  = array();
+		$loose   = array();
 		foreach ( $log as $r ) {
 			if ( in_array( $r['status'], array( 'converted', 'cleaned', 'dynamic' ), true ) && '' !== (string) $r['id'] ) {
 				$widgets[] = (string) $r['id'];
+				// Avsiktligt ändrad layout (karusell → rutnät, Smart Listing/Tiles → rutnät):
+				// originalet kan inte jämföras ruta för ruta, bara till stilen.
+				foreach ( (array) $r['notes'] as $note ) {
+					if ( preg_match( '/karusell|Smart Listing|Smart Tiles/i', (string) $note ) ) {
+						$loose[] = (string) $r['id'];
+						break;
+					}
+				}
 			} elseif ( 'manual' === $r['status'] ) {
 				$manual[] = $r['from'];
 			}
@@ -336,6 +345,7 @@ class CBX_Autopilot {
 			'label'       => CBX_Plugin::post_label( $id ),
 			'changed'     => (bool) $changed,
 			'widgets'     => array_values( array_unique( $widgets ) ),
+			'loose'       => array_values( array_unique( $loose ) ),
 			'manual'      => count( $manual ),
 			'manual_list' => array_values( array_unique( $manual ) ),
 		);
@@ -383,6 +393,7 @@ class CBX_Autopilot {
 			'label'              => $doc['label'],
 			'type'               => 'elementor_library' === $post->post_type ? (string) get_post_meta( $id, '_elementor_template_type', true ) : $post->post_type,
 			'widgets'            => array_values( $doc['widgets'] ),
+			'loose'              => isset( $doc['loose'] ) ? array_values( $doc['loose'] ) : array(),
 			'manual'             => (int) $doc['manual'],
 			'context'            => false,
 			'original_url'       => '',
@@ -416,6 +427,9 @@ class CBX_Autopilot {
 		}
 		if ( '' !== $job['original_url'] ) {
 			$job['preview_url'] = CBX_Preview::swap_url( $job['original_url'], array( $source => $copy ) );
+		}
+		if ( $job['loose'] ) {
+			$job['note'] = trim( $job['note'] . ' En karusell/särskild layout blir ett rutnät här – innehållet rullar i originalet, så det elementet jämförs bara till stilen.' );
 		}
 		return $job;
 	}

@@ -261,9 +261,10 @@ function parseMultipart(body) {
 	const ctxDiff = await pg.evaluate(() => {
 		const a = { widgets: { x: { visible: true, x: 0, y: 0, w: 100, h: 100, texts: [{ t: 'A', fs: '22px', ff: 'georgia', fw: '400', c: 'rgb(0, 0, 0)', tt: 'none', fst: 'normal', td: 'none' }], imgs: [{ k: 'a' }] } } };
 		const b = { widgets: { x: { visible: true, x: 0, y: 0, w: 100, h: 300, texts: [{ t: 'Annat inlägg', fs: '22px', ff: 'georgia', fw: '400', c: 'rgb(0, 0, 0)', tt: 'none', fst: 'normal', td: 'none' }], imgs: [{ k: 'b' }] } } };
-		return [CBXAuto.diff(a, b, { context: true }).status, CBXAuto.diff(a, b, {}).status];
+		return [CBXAuto.diff(a, b, { context: true }).status, CBXAuto.diff(a, b, {}).status, CBXAuto.diff(a, b, { loose: ['x'] }).status, CBXAuto.diff(a, b, { loose: ['annan'] }).status];
 	});
 	ok('diff: context template compares styles only', ctxDiff[0] === 'ok' && ctxDiff[1] !== 'ok', ctxDiff);
+	ok('diff: loose widget (carousel → grid) compares styles only', ctxDiff[2] === 'ok' && ctxDiff[3] !== 'ok', ctxDiff);
 
 	await pg.unroute('**/orig/home');
 	await pg.unroute('**/prev/home');

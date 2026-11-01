@@ -422,6 +422,9 @@ ok( 'queries: site default per page', 10 === $fake2->vars['posts_per_page'] );
 
 /* ---------- 7c. Autopilot ---------- */
 
+// En sida med Jet-karusell: blir medvetet ett rutnät och ska jämföras löst (bara stil).
+$carousel = make_post( 'page', 'Karusellsida', 'publish', el_section( array( el_widget( 'k1', 'jet-posts', array( 'carousel_enabled' => 'yes', 'number' => 6 ) ) ) ) );
+
 $ap_before = get_post_meta( $start, '_elementor_data', true );
 $ap_log    = array();
 $ap_msg    = array();
@@ -435,6 +438,9 @@ $ap_jobs = CBX_Autopilot::run()['jobs'];
 $j       = $ap_jobs[ 'doc-' . $start ] ?? null;
 ok( 'autopilot job: start page', $j && in_array( 'w2', $j['widgets'], true ) && 'https://test.se/?p=' . $start === $j['original_url'] && '[data-elementor-id="' . $start . '"]' === $j['original_root'] && 0 === strpos( $j['preview_url'], 'https://test.se/?p=' . $start . '&cbx_swap=' . $start . '-' ) && false !== strpos( $j['preview_url'], 'cbx_swap_nonce=' ) && 0 === strpos( $j['preview_root'], '[data-elementor-id="' ) );
 ok( 'autopilot job: not draft', ! isset( $ap_jobs[ 'doc-' . $draft ] ) );
+$kj = $ap_jobs[ 'doc-' . $carousel ] ?? null;
+ok( 'autopilot job: carousel widget compared loosely', $kj && array( 'k1' ) === $kj['loose'] && false !== strpos( $kj['note'], 'rutnät' ) );
+ok( 'autopilot job: normal posts widget not loose', array() === $j['loose'] );
 $hj = null;
 foreach ( $ap_jobs as $job ) {
 	if ( '[data-elementor-id="' . $header . '"]' === $job['original_root'] ) {

@@ -1,5 +1,8 @@
 # Ändringar
 
+## 1.6.2
+- Widgets som medvetet byter layout (Jet-karusell, Smart Listing/Tiles → rutnät) jämförs till stilen i stället för ruta för ruta. En karusell med autospelning hinner rulla vidare under mätningen och visade därför "fel" innehåll mot rutnätet – nu stoppar den inte längre Genomför. Rapporten anger att elementet jämförts löst.
+
 ## 1.6.1
 - Genomför stoppas inte längre av dokument som inte går att nå på någon egen adress (t.ex. en mall vars sida inte kan gissas, eller en sida vars adress går till inloggningen). De kontrollerades aldrig före konverteringen och hoppas nu över i HTML-kontrollen efteråt – ett dokument som syntes före konverteringen men inte efter stoppar fortfarande.
 

@@ -229,6 +229,7 @@
 	 */
 	function diff(o, p, job) {
 		job = job || {};
+		var loose = (job.loose || []).map(String);
 		var issues = [];
 		function add(level, msg) { issues.push({ level: level, msg: msg }); }
 
@@ -257,7 +258,8 @@
 				add('fail', name + ' är tomt (inga texter).');
 				return;
 			}
-			if (!job.context) {
+			// Avsiktligt ändrad layout (t.ex. karusell → rutnät): jämför bara stilen.
+			if (!job.context && loose.indexOf(String(id)) < 0) {
 				var dh = pw.h - ow.h;
 				if (Math.abs(dh) > Math.max(4, ow.h * 0.01)) {
 					add('warn', name + ': höjd ' + Math.round(ow.h) + ' → ' + Math.round(pw.h) + ' px.');
@@ -765,7 +767,7 @@
 						return;
 					}
 					var newRoot = phase === 'compare' ? job.preview_root : (phase === 'verify_switch' ? job.verify_root_switch : job.verify_root);
-					var opts = { context: phase === 'compare' ? job.context : false };
+					var opts = { context: phase === 'compare' ? job.context : false, loose: job.loose };
 					function pair() {
 						var origP = phase === 'compare' ? measureUrl(job.original_url, job.original_root, job.widgets, size) : Promise.resolve(base);
 						return Promise.all([origP, measureUrl(jobUrl(job, phase), newRoot, job.widgets, size)]);
