@@ -660,9 +660,10 @@ CSS
 			if ( isset( $r['raw'] ) ) {
 				continue;
 			}
-			$sels_low = array();
-			$sels     = array();
-			$lost     = array();
+			$sels_low  = array();
+			$sels      = array();
+			$sels_self = array();
+			$lost      = array();
 			foreach ( $r['selectors'] as $sel ) {
 				$pos = strpos( $sel, $needle );
 				if ( false === $pos ) {
@@ -674,7 +675,10 @@ CSS
 					$lost[] = 'selector' . $tail;
 					continue;
 				}
-				if ( $map && ! empty( $map['inner'] ) && preg_match( $map['inner'], $tail ) ) {
+				if ( 'selector' === $res ) {
+					// Regeln gäller widgeten själv (eller dess inre omslag).
+					$sels_self[] = $res;
+				} elseif ( $map && ! empty( $map['inner'] ) && preg_match( $map['inner'], $tail ) ) {
 					$sels_low[] = $res;
 				} else {
 					$sels[] = $res;
@@ -694,6 +698,17 @@ CSS
 			if ( $sels ) {
 				$normal[] = array( 'at' => $r['at'], 'selectors' => array_values( array_unique( $sels ) ), 'decls' => $decls );
 				$mapped++;
+			}
+			if ( $sels_self ) {
+				// Avancerat-inställningarna (marginal, padding, ram, skugga) följer
+				// med som inställningar och återskapas av Elementor för den nya
+				// widgeten – kopieras CSS:en också blir de dubbla (widgeten OCH
+				// dess inre omslag). Behåll bara övriga egenskaper.
+				$self_decls = self::strip_props( $decls, '/^(margin|padding|border|box-shadow)/' );
+				if ( '' !== trim( $self_decls ) ) {
+					$normal[] = array( 'at' => $r['at'], 'selectors' => array( 'selector' ), 'decls' => $self_decls );
+					$mapped++;
+				}
 			}
 			if ( $sels_low ) {
 				$low[] = array( 'at' => $r['at'], 'selectors' => array_values( array_unique( $sels_low ) ), 'decls' => self::soften( $decls ) );

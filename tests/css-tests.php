@@ -133,6 +133,14 @@ t( 'button wrapper', has( $bc, 'selector .elementor-button-wrapper { justify-con
 $own = CBX_Css::translate_custom_css( 'jet-posts', 'selector .jet-posts .entry-title { color: red; } selector { margin: 0; }' );
 t( 'custom css translated', has( $own, 'selector .elementor-posts-container .elementor-post__title { color: red;' ) && has( $own, 'selector { margin: 0;' ), $own );
 
+/* ---------- Avancerat-inställningar dubbleras inte ---------- */
+
+// Marginalen (Avancerat) följer med som inställning och återskapas av Elementor.
+// CSS-kopian ska inte lägga den en gång till på widgeten själv.
+$dup = CBX_Css::element_css( 'jet-posts', CBX_Css::parse( '.elementor-1977 .elementor-element.elementor-element-x9x9x9 > .elementor-widget-container{margin:0px 10px;background:#eee}.elementor-1977 .elementor-element.elementor-element-x9x9x9 .jet-posts .entry-title{color:red}' ), 'x9x9x9' );
+t( 'advanced margin not duplicated', false === strpos( $dup['css'], 'margin:0px 10px' ), $dup['css'] );
+t( 'other wrapper props kept on widget', has( $dup['css'], 'background:#eee' ) && has( $dup['css'], 'color:red' ), $dup['css'] );
+
 /* ---------- Typdetektering ---------- */
 
 t( 'detect mega', 'jet-mega-menu' === CBX_Css::detect_type( '.jet-mega-menu-list > .menu-cta' ) );

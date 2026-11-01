@@ -1,5 +1,9 @@
 # Ändringar
 
+## 1.6.3
+- Marginal, padding, ram och skugga från Avancerat-fliken dubbleras inte längre i den överförda stilen (de återskapas redan från inställningarna). Dubbleringen gjorde t.ex. relaterade artiklar 20 px smalare och förskjutna 10 px.
+- Sektionerna runt en karusell jämförs också löst – deras mätning innehåller samma rullande innehåll.
+
 ## 1.6.2
 - Widgets som medvetet byter layout (Jet-karusell, Smart Listing/Tiles → rutnät) jämförs till stilen i stället för ruta för ruta. En karusell med autospelning hinner rulla vidare under mätningen och visade därför "fel" innehåll mot rutnätet – nu stoppar den inte längre Genomför. Rapporten anger att elementet jämförts löst.
 

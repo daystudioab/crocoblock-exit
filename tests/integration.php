@@ -439,7 +439,9 @@ $j       = $ap_jobs[ 'doc-' . $start ] ?? null;
 ok( 'autopilot job: start page', $j && in_array( 'w2', $j['widgets'], true ) && 'https://test.se/?p=' . $start === $j['original_url'] && '[data-elementor-id="' . $start . '"]' === $j['original_root'] && 0 === strpos( $j['preview_url'], 'https://test.se/?p=' . $start . '&cbx_swap=' . $start . '-' ) && false !== strpos( $j['preview_url'], 'cbx_swap_nonce=' ) && 0 === strpos( $j['preview_root'], '[data-elementor-id="' ) );
 ok( 'autopilot job: not draft', ! isset( $ap_jobs[ 'doc-' . $draft ] ) );
 $kj = $ap_jobs[ 'doc-' . $carousel ] ?? null;
-ok( 'autopilot job: carousel widget compared loosely', $kj && array( 'k1' ) === $kj['loose'] && false !== strpos( $kj['note'], 'rutnät' ) );
+ok( 'autopilot job: carousel widget compared loosely', $kj && in_array( 'k1', $kj['loose'], true ) && false !== strpos( $kj['note'], 'rutnät' ) );
+$k_data = CBX_Plugin::get_data( $carousel );
+ok( 'autopilot job: carousel ancestors loose too', in_array( (string) $k_data[0]['id'], $kj['loose'], true ) );
 ok( 'autopilot job: normal posts widget not loose', array() === $j['loose'] );
 $hj = null;
 foreach ( $ap_jobs as $job ) {

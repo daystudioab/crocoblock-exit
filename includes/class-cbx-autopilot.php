@@ -340,6 +340,14 @@ class CBX_Autopilot {
 				$manual[] = $r['from'];
 			}
 		}
+		if ( $loose ) {
+			// Sektionerna och kolumnerna runt en karusell mäter samma rullande
+			// innehåll – de måste också jämföras löst.
+			$data = CBX_Plugin::get_data( $id );
+			if ( $data ) {
+				$loose = array_merge( $loose, self::loose_ancestors( $data, $loose ) );
+			}
+		}
 		return array(
 			'id'          => (int) $id,
 			'label'       => CBX_Plugin::post_label( $id ),
@@ -349,6 +357,24 @@ class CBX_Autopilot {
 			'manual'      => count( $manual ),
 			'manual_list' => array_values( array_unique( $manual ) ),
 		);
+	}
+
+	/** Id:n för alla element som innehåller något av $loose-elementen. */
+	protected static function loose_ancestors( array $elements, array $loose, array $path = array() ) {
+		$out = array();
+		foreach ( $elements as $el ) {
+			if ( ! is_array( $el ) ) {
+				continue;
+			}
+			$id = isset( $el['id'] ) ? (string) $el['id'] : '';
+			if ( in_array( $id, $loose, true ) ) {
+				$out = array_merge( $out, $path );
+			}
+			if ( ! empty( $el['elements'] ) && is_array( $el['elements'] ) ) {
+				$out = array_merge( $out, self::loose_ancestors( $el['elements'], $loose, array_merge( $path, array( $id ) ) ) );
+			}
+		}
+		return array_values( array_unique( $out ) );
 	}
 
 	/** Skapar förhandsvisningar och bygger jämförelsejobben. */
