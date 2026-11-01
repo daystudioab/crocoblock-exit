@@ -18,6 +18,14 @@ jobs:
       - name: Syntaxkontroll
         run: for f in crocoblock-exit.php includes/*.php; do php -l "$f"; done
 
+      - name: Versionsnumret stämmer
+        run: |
+          H=$(sed -n 's/^ \* Version: *//p' crocoblock-exit.php)
+          C=$(sed -n "s/^define( 'CBX_VERSION', '\(.*\)' );/\1/p" crocoblock-exit.php)
+          echo "Huvud: $H, konstant: $C"
+          test -n "$H" && test "$H" = "$C"
+          grep -q "^## $H\$" CHANGELOG.md || { echo "CHANGELOG.md saknar ## $H"; exit 1; }
+
       - name: Konverteringskärnan
         run: php tests/run-tests.php
 
@@ -37,16 +45,39 @@ jobs:
           npx playwright install --with-deps chromium
           node tests/browser/autopilot-test.js
 
-  zip:
+  release:
+    # Ny version på GitHub (som sajterna hämtar) bara från main och bara när alla tester gått igenom.
     needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           path: crocoblock-exit
-      - name: Bygg tilläggs-zip
-        run: zip -qr crocoblock-exit.zip crocoblock-exit -x 'crocoblock-exit/.git/*' 'crocoblock-exit/.github/*' 'crocoblock-exit/tests/*' 'crocoblock-exit/package.json' 'crocoblock-exit/.gitignore'
-      - uses: actions/upload-artifact@v4
-        with:
-          name: crocoblock-exit
-          path: crocoblock-exit.zip
+
+      - name: Version
+        id: v
+        run: |
+          echo "version=$(sed -n 's/^ \* Version: *//p' crocoblock-exit/crocoblock-exit.php)" >> "$GITHUB_OUTPUT"
+
+      - name: Finns versionen redan?
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.v.outputs.version }}" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "yes=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bygg zip och skapa version
+        if: steps.exists.outputs.yes != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          zip -qr crocoblock-exit.zip crocoblock-exit -x 'crocoblock-exit/.git/*' 'crocoblock-exit/.github/*' 'crocoblock-exit/tests/*' 'crocoblock-exit/package.json' 'crocoblock-exit/.gitignore'
+          awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' crocoblock-exit/CHANGELOG.md > notes.md
+          gh release create "v$V" crocoblock-exit.zip -R "${{ github.repository }}" --title "Crocoblock-avveckling $V" --notes-file notes.md --target "${{ github.sha }}"
+

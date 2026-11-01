@@ -226,7 +226,21 @@ function wp_delete_post( $id, $force = false ) { global $wpdb; $wpdb->pdo->prepa
 define( 'WP_CONTENT_DIR', $GLOBALS['_tmp'] );
 function content_url() { return 'https://test.se/wp-content'; }
 function get_stylesheet() { return 'm-tema'; }
-function wp_remote_get( $u, $a = array() ) { return $GLOBALS['_remote'] ?? new WP_Error( 'http', 'ingen loopback i test' ); }
+function wp_remote_get( $u, $a = array() ) {
+	$GLOBALS['_remote_log'][] = $u;
+	foreach ( $GLOBALS['_remote_map'] ?? array() as $prefix => $res ) {
+		if ( 0 === strpos( $u, $prefix ) ) {
+			return $res;
+		}
+	}
+	return $GLOBALS['_remote'] ?? new WP_Error( 'http', 'ingen loopback i test' );
+}
+function get_transient( $k ) { return get_option( '_transient_' . $k ); }
+function set_transient( $k, $v, $t = 0 ) { return update_option( '_transient_' . $k, $v ); }
+function delete_transient( $k ) { return delete_option( '_transient_' . $k ); }
+function plugin_basename( $f ) { return basename( dirname( $f ) ) . '/' . basename( $f ); }
+function wpautop( $s ) { return '<p>' . str_replace( "\n\n", '</p><p>', $s ) . '</p>'; }
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) { define( 'HOUR_IN_SECONDS', 3600 ); }
 function wp_remote_retrieve_response_code( $r ) { return $r['code']; }
 function wp_remote_retrieve_body( $r ) { return $r['body']; }
 function wp_update_custom_css_post( $css ) { $GLOBALS['_custom_css'] = $css; return true; }
@@ -248,8 +262,11 @@ require dirname( __DIR__ ) . '/includes/class-cbx-preview.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-queries.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-autopilot.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-stabilize.php';
+require dirname( __DIR__ ) . '/includes/class-cbx-updater.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-csshero.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-admin.php';
 define( 'CBX_FILE', dirname( __DIR__ ) . '/crocoblock-exit.php' );
 define( 'CBX_URL', 'https://test.se/wp-content/plugins/crocoblock-exit/' );
-define( 'CBX_VERSION', 'test' );
+// Samma version som tilläggets huvud, så att uppdateringskontrollen kan testas.
+preg_match( '/^\s*\*\s*Version:\s*(\S+)/m', file_get_contents( CBX_FILE ), $cbx_v );
+define( 'CBX_VERSION', $cbx_v[1] );

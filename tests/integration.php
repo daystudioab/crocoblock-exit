@@ -595,6 +595,46 @@ $html = ob_get_clean();
 ok( 'flow: three steps and undo', 3 === substr_count( $html, '<li class="cbx-flow-step' ) && false !== strpos( $html, 'data-cbx-auto-run="test"' ) && false !== strpos( $html, 'data-cbx-auto-run="apply"' ) && false !== strpos( $html, 'data-cbx-auto-run="undo"' ) );
 ok( 'flow: switch blocked while jet remains', (bool) preg_match( '/data-cbx-auto-run="switch" disabled/', $html ) && false !== strpos( $html, 'Går inte ännu' ) );
 
+/* ---------- 7e. Uppdateringar från GitHub ---------- */
+
+$api  = 'https://api.github.com/repos/daystudioab/crocoblock-exit/releases/latest';
+$base = CBX_Updater::basename();
+ok( 'updater: plugin header has Update URI on github.com', false !== strpos( file_get_contents( CBX_FILE ), 'Update URI:        https://github.com/daystudioab/crocoblock-exit' ) );
+$rel = function ( $tag, $asset = 'crocoblock-exit.zip' ) {
+	return array( 'code' => 200, 'body' => json_encode( array(
+		'tag_name'     => $tag,
+		'html_url'     => 'https://github.com/daystudioab/crocoblock-exit/releases/tag/' . $tag,
+		'body'         => "Nytt:\n\n- Bättre",
+		'published_at' => '2026-11-02T08:00:00Z',
+		'assets'       => array( array( 'name' => $asset, 'browser_download_url' => 'https://github.com/daystudioab/crocoblock-exit/releases/download/' . $tag . '/' . $asset ) ),
+	) ) );
+};
+list( $maj, $min, $pat ) = array_map( 'intval', explode( '.', CBX_VERSION ) );
+$newer = 'v' . $maj . '.' . ( $min + 1 ) . '.0';
+$GLOBALS['_remote_map'] = array( $api => $rel( $newer ) );
+CBX_Updater::forget();
+$u = CBX_Updater::check( false, array(), $base, array() );
+ok( 'updater: newer release offered with package', is_array( $u ) && ltrim( $newer, 'v' ) === $u['version'] && false !== strpos( $u['package'], $newer . '/crocoblock-exit.zip' ) && 'crocoblock-exit' === $u['slug'] && 'github.com/daystudioab/crocoblock-exit' === $u['id'] );
+ok( 'updater: other plugins untouched', 'orig' === CBX_Updater::check( 'orig', array(), 'annat/annat.php', array() ) );
+$GLOBALS['_remote_log'] = array();
+CBX_Updater::check( false, array(), $base, array() );
+ok( 'updater: cached (GitHub asked once)', ! in_array( $api, $GLOBALS['_remote_log'], true ) );
+$info = CBX_Updater::info( false, 'plugin_information', (object) array( 'slug' => 'crocoblock-exit' ) );
+ok( 'updater: details with changelog', is_object( $info ) && ltrim( $newer, 'v' ) === $info->version && false !== strpos( $info->sections['changelog'], 'Bättre' ) && false !== strpos( $info->download_link, '.zip' ) );
+ok( 'updater: other plugin details untouched', 'x' === CBX_Updater::info( 'x', 'plugin_information', (object) array( 'slug' => 'annat' ) ) );
+$GLOBALS['_remote_map'] = array( $api => $rel( 'v' . CBX_VERSION ) );
+CBX_Updater::forget();
+$u = CBX_Updater::check( false, array(), $base, array() );
+ok( 'updater: same version → no package (WordPress lists it as up to date)', is_array( $u ) && CBX_VERSION === $u['version'] && '' === $u['package'] );
+$GLOBALS['_remote_map'] = array( $api => $rel( $newer, 'source.zip' ) );
+CBX_Updater::forget();
+ok( 'updater: release without the plugin zip is ignored', false === CBX_Updater::check( false, array(), $base, array() ) );
+$GLOBALS['_remote_map'] = array( $api => array( 'code' => 403, 'body' => '{"message":"rate limited"}' ) );
+CBX_Updater::forget();
+ok( 'updater: GitHub error → no update, no crash', false === CBX_Updater::check( false, array(), $base, array() ) && array( 'version' => '' ) === get_transient( CBX_Updater::CACHE ) );
+$GLOBALS['_remote_map'] = array();
+CBX_Updater::forget();
+
 /* ---------- 8. Utan Pro ---------- */
 
 $mapper_free = CBX_Plugin::mapper( array( 'has_pro' => false ) );

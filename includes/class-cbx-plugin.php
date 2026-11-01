@@ -32,6 +32,7 @@ class CBX_Plugin {
 		CBX_Autopilot::init();
 		CBX_Preview::init();
 		CBX_Stabilize::init();
+		CBX_Updater::init();
 		if ( is_admin() ) {
 			CBX_Admin::init();
 		}

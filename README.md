@@ -6,7 +6,15 @@ WordPress-tillägg som tar bort beroendet av Crocoblock (JetElements, JetTabs, J
 
 Samma tillägg installeras på varje sajt. Det inventerar först vad just den sajten använder och konverterar sedan det som går – med provkörning, förhandsgranskning, backup per sida och återställning.
 
-**Nytt i 1.5: tre knappar.** Testa → Genomför → Stäng av Crocoblock, plus Ångra allt. Allt kontrolleras automatiskt – se nedan. De enskilda stegen finns kvar under Avancerat.
+**Nytt i 1.6: uppdateras från GitHub.** Nya versioner syns under Tillägg som vanliga uppdateringar. **Nytt i 1.5: tre knappar.** Testa → Genomför → Stäng av Crocoblock, plus Ångra allt. Se [CHANGELOG.md](CHANGELOG.md).
+
+## Installation och uppdateringar
+
+Ladda ner `crocoblock-exit.zip` från senaste versionen under [Releases](https://github.com/daystudioab/crocoblock-exit/releases) och installera den under Tillägg → Lägg till → Ladda upp.
+
+Därefter uppdateras tillägget härifrån: WordPress frågar GitHub (var sjätte timme, eller direkt med "Kontrollera igen" under Instrumentpanel → Uppdateringar) och visar nya versioner som vanliga uppdateringar, med "Uppdatera nu" och möjlighet att slå på automatiska uppdateringar för tillägget.
+
+En ny version skapas automatiskt när versionsnumret i `crocoblock-exit.php` höjs på `main` och **alla tester har gått igenom** (`.github/workflows/tests.yml`). Underkänns testerna skapas ingen version, så sajterna kan aldrig få en version som inte klarat testerna. Versionsnumret ska stå på två ställen i `crocoblock-exit.php` (huvudet och `CBX_VERSION`) och ha ett avsnitt i `CHANGELOG.md` – det kontrolleras också.
 
 ## Så används det (tre knappar)
 
