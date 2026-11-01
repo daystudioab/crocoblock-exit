@@ -1,0 +1,11 @@
+{
+  "name": "crocoblock-exit",
+  "private": true,
+  "description": "Webbläsartester för autopiloten i Crocoblock-avveckling.",
+  "scripts": {
+    "test": "php tests/run-tests.php && php tests/css-tests.php && php tests/integration.php && node tests/browser/autopilot-test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

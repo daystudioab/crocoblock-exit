@@ -1,0 +1,52 @@
+name: Tester
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite
+
+      - name: Syntaxkontroll
+        run: for f in crocoblock-exit.php includes/*.php; do php -l "$f"; done
+
+      - name: Konverteringskärnan
+        run: php tests/run-tests.php
+
+      - name: CSS-översättningen
+        run: php tests/css-tests.php
+
+      - name: Hela flödet (WordPress-attrapp med SQLite)
+        run: php tests/integration.php
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Autopiloten i Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          node tests/browser/autopilot-test.js
+
+  zip:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: crocoblock-exit
+      - name: Bygg tilläggs-zip
+        run: zip -qr crocoblock-exit.zip crocoblock-exit -x 'crocoblock-exit/.git/*' 'crocoblock-exit/.github/*' 'crocoblock-exit/tests/*' 'crocoblock-exit/package.json' 'crocoblock-exit/.gitignore'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crocoblock-exit
+          path: crocoblock-exit.zip
