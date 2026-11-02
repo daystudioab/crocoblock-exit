@@ -9,6 +9,10 @@
 (function (root) {
 	'use strict';
 
+	// Måste stämma med tilläggets version – kontrolleras när en körning startar,
+	// så att en sida som laddades före en uppdatering inte kör gammal logik.
+	var CBX_JS_VERSION = '1.7.1';
+
 	var WIDTHS = [
 		{ name: 'dator', w: 1440, h: 1000 },
 		{ name: 'surfplatta', w: 768, h: 1024 },
@@ -142,10 +146,13 @@
 			});
 		}
 		var imgs = el.querySelectorAll('img');
+		out.imgsTotal = imgs.length;
+		out.imgsHidden = 0;
 		for (var i = 0; i < imgs.length && out.imgs.length < MAX_IMGS; i++) {
 			var im = imgs[i];
 			var ib = im.getBoundingClientRect();
 			if (ib.width < 1 || ib.height < 1 || hidden(im)) {
+				out.imgsHidden++;
 				continue;
 			}
 			out.imgs.push({ k: imgKey(im.currentSrc || im.src), x: round(ib.left - r.left), y: round(ib.top - r.top), w: round(ib.width), h: round(ib.height) });
@@ -299,22 +306,24 @@
 					add('warn', name + ': annan stil på ' + styled.length + ' texter (' + styled.slice(0, 2).join('; ') + ').');
 				}
 				var used = {};
-				var imgMissing = 0;
+				var imgMissing = [];
 				var imgSized = [];
 				ow.imgs.forEach(function (oi) {
 					var k = -1;
 					for (var i = 0; i < pw.imgs.length; i++) {
 						if (!used[i] && pw.imgs[i].k === oi.k) { k = i; break; }
 					}
-					if (k < 0) { imgMissing++; return; }
+					if (k < 0) { imgMissing.push(oi.k); return; }
 					used[k] = true;
 					var pi = pw.imgs[k];
 					if (Math.abs(pi.w - oi.w) > POS_TOL || Math.abs(pi.h - oi.h) > POS_TOL || Math.abs(pi.x - oi.x) > POS_TOL || Math.abs(pi.y - oi.y) > POS_TOL) {
 						imgSized.push(oi.k + ' ' + Math.round(oi.w) + '×' + Math.round(oi.h) + ' → ' + Math.round(pi.w) + '×' + Math.round(pi.h));
 					}
 				});
-				if (imgMissing) {
-					add(imgMissing === ow.imgs.length ? 'fail' : 'warn', name + ': ' + imgMissing + ' av ' + ow.imgs.length + ' bilder saknas.');
+				if (imgMissing.length) {
+					// Skilj på "borta ur sidkoden" och "finns men är dold/utan storlek" – avgörande för felsökning.
+					var inDom = (pw.imgsTotal || 0) - pw.imgs.length;
+					add(imgMissing.length === ow.imgs.length ? 'fail' : 'warn', name + ': ' + imgMissing.length + ' av ' + ow.imgs.length + ' bilder saknas (' + imgMissing.slice(0, 3).join(', ') + '). Nya versionen har ' + (pw.imgsTotal || 0) + ' bilder i sidkoden' + (inDom > 0 ? ', varav ' + inDom + ' dolda eller utan storlek' : '') + '.');
 				}
 				if (imgSized.length) {
 					add('warn', name + ': ' + imgSized.length + ' bilder har annan storlek eller plats (' + imgSized.slice(0, 2).join('; ') + ').');
@@ -872,6 +881,7 @@
 		var jobs = [];
 		var stop = null;       // anledning att avbryta
 		var rollback = false;
+		var stale = false;     // sidan laddades före en uppdatering av tillägget
 
 		function ok(status) {
 			return status === 'ok' || status === 'skip' || (status === 'warn' && opts.allow_warn);
@@ -922,6 +932,15 @@
 		}
 
 		post({ op: 'start', mode: mode, csshero: opts.csshero ? 1 : '', switch: opts.switch ? 1 : '', allow_warn: opts.allow_warn ? 1 : '' }).then(function (plan) {
+			if (plan.version && plan.version !== CBX_JS_VERSION) {
+				// Sidan laddades före en uppdatering av tillägget – gammal logik i
+				// webbläsaren mot ny server ger fel beteende (t.ex. inga beslutspauser).
+				lock(false);
+				stale = true;
+				window.alert('Tillägget har uppdaterats (' + plan.version + ') sedan den här sidan laddades. Sidan laddas om – klicka sedan på knappen igen.');
+				if (!root.CBX_NO_RELOAD) { window.location.reload(); }
+				throw new Error('stale');
+			}
 			renderSteps(plan.steps, plan.labels);
 			var chain = Promise.resolve();
 			var skipSwitch = false;
@@ -1006,9 +1025,11 @@
 			});
 			return chain;
 		}).catch(function (e) {
+			if (stale) { return; }
 			stop = e.message;
 			rollback = mode === 'apply';
 		}).then(function () {
+			if (stale) { return; }
 			if (rollback) {
 				return post({ op: 'step', step: 'rollback' }).then(function (res) {
 					report.rolledBack = res.message;
@@ -1017,6 +1038,7 @@
 				});
 			}
 		}).then(function () {
+			if (stale) { return; }
 			report.finished = new Date().toLocaleString('sv-SE');
 			report.cleaned = report.steps.cleanup === 'ok';
 			var compare = report.steps.compare;
@@ -1055,6 +1077,7 @@
 			if (barEl) { barEl.style.width = '100%'; }
 			return post({ op: 'report', report: JSON.stringify(report) }).catch(function () {});
 		}).then(function () {
+			if (stale) { return; }
 			lock(false);
 			if (mode !== 'test' && !root.CBX_NO_RELOAD) {
 				// Statusen överst (konverterade sidor, Crocoblock på/av) ändrades – visa den nya.

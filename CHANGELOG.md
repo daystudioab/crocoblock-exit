@@ -1,5 +1,9 @@
 # Ändringar
 
+## 1.7.1
+- En sida som laddades före en uppdatering av tillägget körde gammal logik i webbläsaren (t.ex. utan beslutspauserna). Nu upptäcks det när en körning startar: sidan laddas om och du klickar igen.
+- När bilder saknas i jämförelsen namnges de, och rapporten säger om bilden är borta ur sidkoden eller finns men är dold – avgörande för felsökning.
+
 ## 1.7.0
 - **Du får ta ställning.** Vid avvikelser eller fel pausar autopiloten och frågar i stället för att avgöra själv: efter testet (Avbryt / Konvertera ändå), efter konverteringen (Återställ allt / Behåll konverteringen) och efter avstängningen av Crocoblock (Slå på igen / Behåll avstängt). När Crocoblock är avstängt och sajten kan se trasig ut räknas det säkra valet ner och körs automatiskt om du inte svarar inom 2 minuter. Beslutet antecknas i rapporten.
 - **Redan migrerade mallar uppdateras.** Mallar som migrerades med en äldre version av tillägget fick aldrig senare konverteringsrättelser – t.ex. kunde sidhuvudets logga saknas när det gamla migrerade sidhuvudet publicerades. Nu konverteras innehållet om (id, status och visningsvillkor rörs inte) varje gång mallsteget körs, och "Stäng av Crocoblock" gör det alltid först.

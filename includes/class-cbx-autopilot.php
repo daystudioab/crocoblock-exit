@@ -921,7 +921,7 @@ class CBX_Autopilot {
 				'allow_warn' => ! empty( $_POST['allow_warn'] ),
 			);
 			$run = self::start( $mode, $opts );
-			wp_send_json_success( array( 'steps' => $run['steps'], 'labels' => self::labels(), 'opts' => $run['opts'], 'mode' => $run['mode'] ) );
+			wp_send_json_success( array( 'steps' => $run['steps'], 'labels' => self::labels(), 'opts' => $run['opts'], 'mode' => $run['mode'], 'version' => CBX_VERSION ) );
 		}
 		if ( 'step' === $op ) {
 			$step   = isset( $_POST['step'] ) ? sanitize_key( wp_unslash( $_POST['step'] ) ) : '';

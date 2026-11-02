@@ -119,6 +119,9 @@ function ajax(fields, base) {
 	state.calls.push(fields.op + (fields.step ? ':' + fields.step : ''));
 	if (fields.op === 'start') {
 		state.opts = fields;
+		if (state.serverVersion) {
+			return { steps: [], labels: {}, mode: fields.mode, version: state.serverVersion };
+		}
 		const steps = STEPS[fields.mode].slice();
 		if (fields.switch) {
 			steps.splice(steps.indexOf('cleanup'), 0, 'switch', 'http_check_switch', 'verify_switch');
@@ -272,7 +275,7 @@ function parseMultipart(body) {
 	/* --- Hela körningen --- */
 	async function run(mode, setup) {
 		setup = setup || {};
-		Object.assign(state, { converted: false, liveBroken: false, preview: 'good', calls: [], report: null, stable: '', stableMap: null, noStabilize: false, switched: false, breakOnSwitch: false }, setup);
+		Object.assign(state, { converted: false, liveBroken: false, preview: 'good', calls: [], report: null, stable: '', stableMap: null, noStabilize: false, switched: false, breakOnSwitch: false, serverVersion: '' }, setup);
 		await pg.goto(base + '/admin');
 		if (setup.allowWarn) {
 			await pg.check('[name="cbx_auto_allow_warn"]');
@@ -361,6 +364,16 @@ function parseMultipart(body) {
 	// Samma läge, men användaren väljer att behålla avstängt.
 	r = await run('switch', { converted: true, breakOnSwitch: true, choose: 'keep' });
 	ok('run switch broken, keep: stays off on user decision', !r.calls.includes('step:rollback') && state.switched === true && /avstängt\. Du godkände skillnaderna/.test(r.verdict), r.verdict);
+
+	// Sidan laddades före en uppdatering: körningen avbryts i stället för att köra gammal logik.
+	{
+		Object.assign(state, { calls: [], report: null, serverVersion: '9.9.9' });
+		await pg.goto(base + '/admin'); // global dialog-hanterare accepterar varningsrutan
+		await pg.click('[data-cbx-auto-run="test"]');
+		await pg.waitForTimeout(1500);
+		ok('stale page: run aborts, nothing else called', state.calls.length === 1 && state.calls[0] === 'start' && !state.report, state.calls);
+		state.serverVersion = '';
+	}
 
 	r = await run('undo', { converted: true });
 	ok('run undo: restored', /Allt är återställt/.test(r.verdict) && state.converted === false && r.calls.includes('step:undo'), r.verdict);

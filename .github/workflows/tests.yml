@@ -25,6 +25,9 @@ jobs:
           echo "Huvud: $H, konstant: $C"
           test -n "$H" && test "$H" = "$C"
           grep -q "^## $H\$" CHANGELOG.md || { echo "CHANGELOG.md saknar ## $H"; exit 1; }
+          J=$(sed -n "s/^\tvar CBX_JS_VERSION = '\(.*\)';$/\1/p" assets/autopilot.js)
+          echo "autopilot.js: $J"
+          test "$J" = "$H" || { echo "CBX_JS_VERSION i assets/autopilot.js måste vara $H"; exit 1; }
 
       - name: Konverteringskärnan
         run: php tests/run-tests.php
