@@ -1643,6 +1643,24 @@ class CBX_Mapper {
 			return array( 'manual' => sprintf( 'Dynamiskt fält "%s" har ingen automatisk motsvarighet.', $prop ) );
 		}
 
+		if ( 'acf_field_groups' === $source ) {
+			// Jets ACF-nyckel är "field_x::fältnamn"; Elementor Pros ACF-tagg
+			// använder "field_x:fältnamn". Samma fält, annan avgränsare.
+			$key = (string) $this->v( $s, 'acf_field_key', '' );
+			if ( '' === $key ) {
+				return array( 'manual' => 'ACF-fält utan angiven nyckel.' );
+			}
+			$pro_key = str_replace( '::', ':', $key );
+			if ( in_array( $tag, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ), true ) ) {
+				return array( 'widgetType' => 'heading', 'settings' => array( 'title' => '', 'header_size' => $tag, '__dynamic__' => array( 'title' => $this->tag_text( 'acf-text', array( 'key' => $pro_key ) ) ) ), 'notes' => $notes );
+			}
+			return array(
+				'widgetType' => 'text-editor',
+				'settings'   => array( 'editor' => '', '__dynamic__' => array( 'editor' => $this->tag_text( 'acf-text', array( 'key' => $pro_key ) ) ) ),
+				'notes'      => $notes,
+			);
+		}
+
 		if ( 'meta' === $source ) {
 			$key = $this->v( $s, 'dynamic_field_post_meta_custom', $this->v( $s, 'dynamic_field_post_meta', '' ) );
 			if ( '' === $key ) {

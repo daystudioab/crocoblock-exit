@@ -219,6 +219,16 @@ check( 'countdown', '2026-12-24 15:00' === $wd['settings']['due_date'] && '' ===
 list( $out ) = $pro->convert_document( doc( array( w( 'jet-circle-progress', array( 'percent_value' => array( 'unit' => '%', 'size' => 80 ) ) ) ) ) );
 check( 'circle 80', 80 === first_widget( $out )['settings']['ending_number'] );
 
+/* ACF-fält i dynamiskt fält → Elementor Pros ACF-tagg */
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-listing-dynamic-field', array( 'dynamic_field_source' => 'acf_field_groups', 'acf_field_key' => 'field_6151daf54a86a::geografiskt_omrade', 'field_tag' => 'div' ) ) ) ) );
+$wd = first_widget( $out );
+check( 'acf field → text-editor with acf-text tag', 'text-editor' === $wd['widgetType'] && false !== strpos( $wd['settings']['__dynamic__']['editor'], 'name="acf-text"' ) );
+check( 'acf key uses single colon', false !== strpos( urldecode( $wd['settings']['__dynamic__']['editor'] ), 'field_6151daf54a86a:geografiskt_omrade' ) && false === strpos( urldecode( $wd['settings']['__dynamic__']['editor'] ), '::' ) );
+list( $out ) = $pro->convert_document( doc( array( w( 'jet-listing-dynamic-field', array( 'dynamic_field_source' => 'acf_field_groups', 'acf_field_key' => 'field_1::rubrik', 'field_tag' => 'h3' ) ) ) ) );
+check( 'acf field with heading tag', 'heading' === first_widget( $out )['settings']['header_size'] ? false : 'h3' === first_widget( $out )['settings']['header_size'] && 'heading' === first_widget( $out )['widgetType'] );
+list( , $log ) = $pro->convert_document( doc( array( w( 'jet-listing-dynamic-field', array( 'dynamic_field_source' => 'acf_field_groups' ) ) ) ) );
+check( 'acf field without key stays manual', 'manual' === $log[0]['status'] );
+
 /* Egen WP_Query (JSON) → Query ID */
 $registered = array();
 $pro_q      = new CBX_Mapper( array( 'has_pro' => true, 'register_query' => function ( array $a ) use ( &$registered ) { $registered[] = $a; return 'cbx_test'; } ) );

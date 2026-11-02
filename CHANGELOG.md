@@ -1,5 +1,8 @@
 # Ändringar
 
+## 1.8.0
+- Dynamiska fält som visar ACF-fält (JetEngine "Dynamic Field" med källan ACF) konverteras nu automatiskt till Elementor Pros ACF-tagg – rubrik eller text beroende på fältets HTML-tagg. Tidigare krävde de handpåläggning och spärrade avstängningen av Crocoblock.
+
 ## 1.7.2
 - När en bild rapporteras som dold anges orsaken: vilken egenskap (display, visibility, opacity, aria-hidden eller hopfälld behållare) och på vilket element.
 

@@ -111,6 +111,7 @@ På tidningenm.se: 36 regler, varav 2 pekar på Crocoblock och 1 är skör. Typs
 | Sticky-sektion (JetBlocks) | Elementor Pros sticky | ja |
 | Popup-koppling på knapp/bild/rubrik | Dynamisk länk → Popup | ja |
 | JetEngine-taggen "custom field" | Post Custom Field | ja |
+| jet-listing-dynamic-field med ACF-källa | Elementor Pros ACF-tagg | ja |
 | JetPopup | Elementor-popup med utlösare | ja |
 | JetThemeCore | Theme Builder-mall med visningsvillkor | ja |
 
