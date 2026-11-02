@@ -856,8 +856,15 @@ class CBX_Mapper {
 			// standard ser annorlunda ut (kursiv stil, andra färger och storlekar).
 			// Utseendet följer med som CSS på den nya widgeten.
 			$css  = array();
+			// Pro-karusellens standardmått (20px padding på sliden, 25px under
+			// kortets fot) fanns inte hos Jet, och Jets skin gav kommentaren
+			// 5px marginal. Utan dem blir karusellen ~80px högre än originalet.
+			$css[] = 'selector :where(.swiper-slide){padding:0;}';
+			$css[] = 'selector :where(.elementor-testimonial__content){padding:0;}';
+			$css[] = 'selector :where(.elementor-testimonial__footer){margin:0;}';
 			$text = $this->typo_css( $s, 'comment_typography' );
 			$text .= 'font-style:' . $this->v( $s, 'comment_typography_font_style', 'normal' ) . ';';
+			$text .= 'margin:5px;';
 			$text .= 'color:' . $this->v( $s, 'comment_color', 'inherit' ) . ';';
 			$css[] = 'selector :where(.elementor-testimonial__text){' . $text . '}'; // :where – reservregel som översatt element-CSS ska vinna över.
 			$name  = $this->typo_css( $s, 'name_typography' );

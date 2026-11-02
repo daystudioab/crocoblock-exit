@@ -278,10 +278,11 @@ $wd  = first_widget( $out );
 $css = $wd['settings']['custom_css'];
 check( 'testimonials → testimonial-carousel', 'testimonial-carousel' === $wd['widgetType'] );
 check( 'testimonials fade-effekt följer med', 'fade' === $wd['settings']['effect'] );
-check( 'testimonials texttypografi i css', false !== strpos( $css, ':where(.elementor-testimonial__text){font-family:"Euclid";font-size:18px;line-height:23px;font-weight:400;font-style:normal;color:inherit;}' ) );
+check( 'testimonials texttypografi i css', false !== strpos( $css, ':where(.elementor-testimonial__text){font-family:"Euclid";font-size:18px;line-height:23px;font-weight:400;font-style:normal;margin:5px;color:inherit;}' ) );
 check( 'testimonials namnstil i css', false !== strpos( $css, ':where(.elementor-testimonial__name){' ) && false !== strpos( $css, 'font-size:10px' ) && false !== strpos( $css, 'text-transform:uppercase' ) && false !== strpos( $css, 'color:#008CD3' ) && false !== strpos( $css, 'margin:15px 0px 0px 7px' ) );
 check( 'testimonials stjärnor via css', false !== strpos( $css, "::before{content:\"★★★★★\";" ) && false !== strpos( $css, 'font-size:15px;letter-spacing:13px;margin:0px 0px 15px 0px' ) );
 check( 'testimonials befintlig custom_css bevaras', 0 === strpos( $css, 'selector{outline:none;}' ) );
+check( 'testimonials strukturmått neutraliseras', false !== strpos( $css, ':where(.swiper-slide){padding:0;}' ) && false !== strpos( $css, ':where(.elementor-testimonial__footer){margin:0;}' ) );
 check( 'testimonials karusellnot för översiktlig jämförelse', (bool) preg_match( '/karusell/i', implode( ' ', $log[0]['notes'] ) ) );
 check( 'testimonials ingen betygsnot när betygen är lika', ! preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
 

@@ -1,5 +1,12 @@
 # Ändringar
 
+## 1.9.5
+
+- Omdömeskarusellens höjd matchar nu originalet: Pro-karusellens standardmått
+  (padding på sliden, marginal under kortets fot) nollas som reservregler, och
+  Jet-skinnets 5px-marginal på kommentaren följer med. Tidigare blev den
+  konverterade karusellen ~80px högre och knuffade innehållet under sig.
+
 ## 1.9.4
 
 - Omdömeskarusellens reservregler (typografi/färg ur widgetens inställningar)
