@@ -323,6 +323,13 @@ $GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<link rel="stylesheet" hr
 $col = CBX_CSS_Hero::collect();
 ok( 'hero: loopback link + inline', false !== strpos( $col['css'], 'antialiased' ) && false !== strpos( $col['css'], '.extra' ) && 2 === count( $col['sources'] ) );
 unset( $GLOBALS['_remote'] );
+// Sajtens CSS-översättning läser CSS Hero-filen sajten länkar till (nyheterivasterbotten.se:
+// filen låg bland tusentals bilder, och en gammal kopia valdes).
+$GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<link rel="stylesheet" href="https://test.se/wp-content/uploads/2026/10/csshero-static-style-m-tema.css?ver=380">' );
+$hero_src = array_values( array_filter( CBX_Site_CSS::sources(), function ( $s ) { return 0 === strpos( $s['label'], 'CSS Hero' ); } ) );
+ok( 'site-css: CSS Hero som besökarna får är en källa', 1 === count( $hero_src ) && false !== strpos( $hero_src[0]['css'], 'jet-dropdown-arrow' ) );
+ok( 'site-css: CSS Hero-filer räknas inte dubbelt i genomsökningen', 1 === count( array_filter( CBX_Site_CSS::sources(), function ( $s ) { return false !== strpos( $s['label'], 'csshero' ); } ) ) );
+unset( $GLOBALS['_remote'] );
 
 $res = CBX_CSS_Hero::migrate();
 ok( 'hero: migrated', ! is_wp_error( $res ) && 5 === $res['moved'] );

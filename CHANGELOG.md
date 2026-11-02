@@ -1,5 +1,11 @@
 # Ändringar
 
+## 1.11.3
+
+- Rättelse till 1.11.2: CSS Hero-källan kopplades inte in i sajtens
+  CSS-översättning (fel klassnamn), så regler mot Crocoblocks klasser
+  översattes fortfarande inte. Nu med test.
+
 ## 1.11.2
 
 - CSS Hero-regler som pekar på Crocoblocks klasser översätts nu redan i

@@ -75,10 +75,10 @@ class CBX_Site_CSS {
 		}
 
 		// CSS Hero (så länge den är aktiv): exakt den CSS besökarna får.
-		if ( class_exists( 'CBX_CSSHero' ) && ! get_option( 'cbx_csshero_backup' ) ) {
-			$hero = CBX_CSSHero::plugin();
+		if ( class_exists( 'CBX_CSS_Hero' ) && ! get_option( 'cbx_csshero_backup' ) ) {
+			$hero = CBX_CSS_Hero::plugin();
 			if ( $hero && $hero['active'] ) {
-				$h = CBX_CSSHero::collect();
+				$h = CBX_CSS_Hero::collect();
 				if ( '' !== $h['css'] && ( preg_match( CBX_Css::JET_SEL, $h['css'] ) || preg_match( '/html\s*>\s*body/i', $h['css'] ) ) ) {
 					$out[] = array( 'label' => 'CSS Hero – ' . implode( ', ', $h['sources'] ), 'kind' => 'file', 'css' => $h['css'] );
 				}
