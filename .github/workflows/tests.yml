@@ -47,6 +47,7 @@ jobs:
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
           node tests/browser/autopilot-test.js
+          node tests/browser/unfold-test.js
 
   release:
     # Ny version på GitHub (som sajterna hämtar) bara från main och bara när alla tester gått igenom.
