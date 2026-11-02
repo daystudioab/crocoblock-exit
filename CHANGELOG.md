@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.11.2
+
+- CSS Hero-regler som pekar på Crocoblocks klasser översätts nu redan i
+  Testa: översättningen läser exakt den CSS Hero-fil som sajten länkar till
+  (tidigare kunde en gammal kopia väljas, och på sajter med många bilder
+  hittades filen inte alls eftersom genomsökningen av uppladdningarna slutade
+  efter 5 000 filer). Genomsökningen räknar nu bara CSS-filerna mot taket.
+
 ## 1.11.1
 
 - Fler mallar jämförs visuellt: sparade sektioner och sidor utan egen adress

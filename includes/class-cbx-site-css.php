@@ -74,7 +74,18 @@ class CBX_Site_CSS {
 			}
 		}
 
-		// Filer: tema, barntema, egna tillägg, uppladdningar (CSS Hero m.fl.).
+		// CSS Hero (så länge den är aktiv): exakt den CSS besökarna får.
+		if ( class_exists( 'CBX_CSSHero' ) && ! get_option( 'cbx_csshero_backup' ) ) {
+			$hero = CBX_CSSHero::plugin();
+			if ( $hero && $hero['active'] ) {
+				$h = CBX_CSSHero::collect();
+				if ( '' !== $h['css'] && ( preg_match( CBX_Css::JET_SEL, $h['css'] ) || preg_match( '/html\s*>\s*body/i', $h['css'] ) ) ) {
+					$out[] = array( 'label' => 'CSS Hero – ' . implode( ', ', $h['sources'] ), 'kind' => 'file', 'css' => $h['css'] );
+				}
+			}
+		}
+
+		// Filer: tema, barntema, egna tillägg, uppladdningar.
 		foreach ( self::css_files() as $file => $label ) {
 			$css = (string) file_get_contents( $file ); // phpcs:ignore
 			// Regler mot Crocoblock, eller positionsberoende regler (CSS Hero) som autopiloten stabiliserar.
@@ -113,19 +124,22 @@ class CBX_Site_CSS {
 			if ( ! is_dir( $dir ) ) {
 				continue;
 			}
-			$n  = 0;
-			$it = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ) );
+			$n   = 0; // Alla filer (tak för att inte gå vilse i enorma mappar).
+			$css = 0; // CSS-filer.
+			$it  = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ) );
 			foreach ( $it as $f ) {
-				if ( ++$n > 5000 ) {
+				if ( ++$n > 200000 || $css > 3000 ) {
 					break;
 				}
 				$path = $f->getPathname();
 				if ( 'css' !== strtolower( $f->getExtension() ) || $f->getSize() > 2 * 1024 * 1024 ) {
 					continue;
 				}
+				$css++;
 				$rel = ltrim( str_replace( $dir, '', $path ), '/' );
-				// CSS Heros fil räknas inte när den redan flyttats till Ytterligare CSS.
-				if ( false !== strpos( $rel, 'csshero' ) && get_option( 'cbx_csshero_backup' ) ) {
+				// CSS Heros filer läses inte här: det kan finnas gamla versioner kvar,
+				// och den som besökarna får läggs till separat (se sources()).
+				if ( false !== strpos( $rel, 'csshero' ) ) {
 					continue;
 				}
 				if ( preg_match( '#(^|/)(node_modules|vendor|vendors|lib|libs|bower_components)/|(^|/)elementor/(css|google-fonts)/|(^|/)jet-[\w-]+/|(^|/)cache/#', $rel ) ) {

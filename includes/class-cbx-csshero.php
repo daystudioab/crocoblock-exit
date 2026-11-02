@@ -67,6 +67,7 @@ class CBX_CSS_Hero {
 					if ( $file && is_readable( $file ) ) {
 						$css      .= file_get_contents( $file ) . "\n"; // phpcs:ignore
 						$sources[] = self::short( $file );
+						update_option( 'cbx_csshero_live_file', $file, false ); // Den som besökarna faktiskt får.
 					}
 				}
 			}
@@ -88,6 +89,11 @@ class CBX_CSS_Hero {
 	}
 
 	protected static function latest_static_file() {
+		// Filen som sajten senast sågs länka till vinner över gamla versioner.
+		$live = (string) get_option( 'cbx_csshero_live_file', '' );
+		if ( '' !== $live && is_readable( $live ) ) {
+			return $live;
+		}
 		$upload = wp_upload_dir();
 		$theme  = function_exists( 'get_stylesheet' ) ? get_stylesheet() : '';
 		$best   = null;
