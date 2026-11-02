@@ -862,6 +862,7 @@ class CBX_Mapper {
 			$css[] = 'selector :where(.swiper-slide){padding:0;}';
 			$css[] = 'selector :where(.elementor-testimonial__content){padding:0;}';
 			$css[] = 'selector :where(.elementor-testimonial__footer){margin:0;}';
+			$css[] = 'selector :where(.elementor-testimonial__cite){margin:0;padding:0;}';
 			$text = $this->typo_css( $s, 'comment_typography' );
 			$text .= 'font-style:' . $this->v( $s, 'comment_typography_font_style', 'normal' ) . ';';
 			$text .= 'margin:5px;';

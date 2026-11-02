@@ -282,7 +282,7 @@ check( 'testimonials texttypografi i css', false !== strpos( $css, ':where(.elem
 check( 'testimonials namnstil i css', false !== strpos( $css, ':where(.elementor-testimonial__name){' ) && false !== strpos( $css, 'font-size:10px' ) && false !== strpos( $css, 'text-transform:uppercase' ) && false !== strpos( $css, 'color:#008CD3' ) && false !== strpos( $css, 'margin:15px 0px 0px 7px' ) );
 check( 'testimonials stjärnor via css', false !== strpos( $css, "::before{content:\"★★★★★\";" ) && false !== strpos( $css, 'font-size:15px;letter-spacing:13px;margin:0px 0px 15px 0px' ) );
 check( 'testimonials befintlig custom_css bevaras', 0 === strpos( $css, 'selector{outline:none;}' ) );
-check( 'testimonials strukturmått neutraliseras', false !== strpos( $css, ':where(.swiper-slide){padding:0;}' ) && false !== strpos( $css, ':where(.elementor-testimonial__footer){margin:0;}' ) );
+check( 'testimonials strukturmått neutraliseras', false !== strpos( $css, ':where(.swiper-slide){padding:0;}' ) && false !== strpos( $css, ':where(.elementor-testimonial__footer){margin:0;}' ) && false !== strpos( $css, ':where(.elementor-testimonial__cite){margin:0;padding:0;}' ) );
 check( 'testimonials karusellnot för översiktlig jämförelse', (bool) preg_match( '/karusell/i', implode( ' ', $log[0]['notes'] ) ) );
 check( 'testimonials ingen betygsnot när betygen är lika', ! preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
 

@@ -1,5 +1,11 @@
 # Ändringar
 
+## 1.9.6
+
+- Sista höjdskillnaden i omdömeskarusellen: Pro-skinnets cite-element
+  (namnraden) har 25px toppmarginal som Jet saknade – den nollas nu som
+  reservregel, så karusellen blir exakt lika hög som originalet.
+
 ## 1.9.5
 
 - Omdömeskarusellens höjd matchar nu originalet: Pro-karusellens standardmått
