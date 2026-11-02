@@ -456,14 +456,27 @@ class CBX_Autopilot {
 				$conds = get_post_meta( $id, CBX_Templates::PENDING, true );
 			}
 			$job['original_url'] = self::template_url( $job['type'], is_array( $conds ) ? $conds : array() );
+			if ( '' === $job['original_url'] && ! in_array( $job['type'], array( 'popup', 'loop-item' ), true ) ) {
+				// Sparade sektioner/sidor och arkiv utan gissningsbar adress kan
+				// ändå ingå i en sida (t.ex. via en Mall-widget) – jämför där.
+				foreach ( self::alt_urls( home_url( '/' ) . '#', $job['type'] ) as $alt ) {
+					if ( self::root_at_url( $alt, $job['original_root'], false ) ) {
+						$job['original_url'] = $alt;
+						$job['note']         = 'Mallen ingår i ' . str_replace( home_url(), '', $alt ) . ' och jämförs där.';
+						break;
+					}
+				}
+			}
 			if ( '' === $job['original_url'] ) {
 				$job['note'] = 'Mallen visas inte på någon egen sida (t.ex. popup, loop-mall eller sparad sektion) och jämförs inte visuellt.';
+			} elseif ( '' !== $job['note'] ) {
+				// Adressen hittades nyss genom att leta – inget mer att göra.
 			} elseif ( ! self::root_at_url( $job['original_url'], $job['original_root'] ) ) {
 				// En mer specifik mall kan gälla på den gissade adressen (t.ex. ett
 				// särskilt sidhuvud på startsidan, medan det allmänna sidhuvudet
 				// visas överallt annars). Prova andra sidor innan mallen lämnas
 				// ojämförd.
-				foreach ( self::alt_urls( $job['original_url'] ) as $alt ) {
+				foreach ( self::alt_urls( $job['original_url'], $job['type'] ) as $alt ) {
 					if ( self::root_at_url( $alt, $job['original_root'] ) ) {
 						$job['original_url'] = $alt;
 						$job['note']         = 'Mallen syns inte på sin gissade adress (en mer specifik mall gäller där) – jämförs på ' . str_replace( home_url(), '', $alt ) . ' i stället.';
@@ -578,9 +591,37 @@ class CBX_Autopilot {
 	}
 
 	/** Andra sidor att prova när mallens rot inte syns på den gissade adressen. */
-	protected static function alt_urls( $skip ) {
+	protected static function alt_urls( $skip, $type = '' ) {
 		$front = (int) get_option( 'page_on_front' );
 		$urls  = array();
+		if ( 'archive' === $type ) {
+			// Ett allmänt arkiv kan vara undanträngt av ett kategoriarkiv –
+			// prova andra slags arkiv: etikett, författare, datum, inläggsarkiv.
+			if ( function_exists( 'get_terms' ) && function_exists( 'get_term_link' ) ) {
+				$tags = get_terms( array( 'taxonomy' => 'post_tag', 'orderby' => 'count', 'order' => 'DESC', 'number' => 1, 'hide_empty' => true ) );
+				if ( $tags && ! is_wp_error( $tags ) ) {
+					$link = get_term_link( $tags[0] );
+					if ( is_string( $link ) ) {
+						$urls[] = $link;
+					}
+				}
+			}
+			$latest = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'numberposts' => 1, 'orderby' => 'date', 'order' => 'DESC' ) );
+			if ( $latest ) {
+				if ( function_exists( 'get_author_posts_url' ) ) {
+					$urls[] = get_author_posts_url( (int) $latest[0]->post_author );
+				}
+				if ( function_exists( 'get_year_link' ) && ! empty( $latest[0]->post_date ) ) {
+					$urls[] = get_year_link( (int) substr( $latest[0]->post_date, 0, 4 ) );
+				}
+			}
+			$blog = (int) get_option( 'page_for_posts' );
+			if ( $blog ) {
+				$urls[] = get_permalink( $blog );
+			}
+			$urls[] = home_url( '/?s=a' );
+			return array_values( array_unique( array_filter( array_diff( $urls, array( $skip ) ) ) ) );
+		}
 		foreach ( get_posts( array( 'post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 3, 'orderby' => 'date', 'order' => 'DESC', 'exclude' => $front ? array( $front ) : array() ) ) as $p ) {
 			$urls[] = get_permalink( $p->ID );
 		}
@@ -596,14 +637,14 @@ class CBX_Autopilot {
 		self::$html_cache = array();
 	}
 
-	/** Syns dokumentets rot på adressen? Vid hämtningsfel antas ja. */
-	protected static function root_at_url( $url, $root_sel ) {
+	/** Syns dokumentets rot på adressen? Vid hämtningsfel antas $on_error. */
+	protected static function root_at_url( $url, $root_sel, $on_error = true ) {
 		if ( ! array_key_exists( $url, self::$html_cache ) ) {
 			$res                      = wp_remote_get( add_query_arg( array( 'cbx_check' => time() ), $url ), array( 'timeout' => 8, 'redirection' => 3, 'sslverify' => false ) );
 			self::$html_cache[ $url ] = is_wp_error( $res ) ? null : (string) wp_remote_retrieve_body( $res );
 		}
 		if ( null === self::$html_cache[ $url ] ) {
-			return true;
+			return $on_error;
 		}
 		return self::root_in_html( $root_sel, self::$html_cache[ $url ] );
 	}

@@ -631,6 +631,42 @@ $job = CBX_Autopilot::job_for( array( 'id' => $hdr_gen, 'label' => 'Allmänt sid
 ok( 'alt-url: gissad adress behålls när roten syns där', 'https://test.se/' === $job['original_url'] && '' === $job['note'] );
 $GLOBALS['_remote_map'] = array();
 
+// Allmänt arkiv undanträngt av ett kategoriarkiv → prova författar-/datumarkiv.
+if ( ! function_exists( 'get_author_posts_url' ) ) {
+	function get_author_posts_url( $id ) { return 'https://test.se/author/' . (int) $id . '/'; }
+}
+$arch = wp_insert_post( array( 'post_title' => 'Arkiv', 'post_type' => 'elementor_library', 'post_status' => 'publish' ) );
+update_post_meta( $arch, '_elementor_template_type', 'archive' );
+update_post_meta( $arch, '_elementor_conditions', array( 'include/archive' ) );
+update_post_meta( $arch, '_elementor_data', wp_slash( wp_json_encode( array( array( 'id' => 'sa1', 'elType' => 'section', 'settings' => array(), 'elements' => array() ) ) ) ) );
+wp_insert_post( array( 'post_title' => 'Nyhet', 'post_type' => 'post', 'post_status' => 'publish' ) );
+CBX_Autopilot::flush_url_cache();
+$GLOBALS['_remote'] = function ( $u ) use ( $arch ) {
+	return 0 === strpos( $u, 'https://test.se/author/' )
+		? array( 'code' => 200, 'body' => '<div data-elementor-id="' . $arch . '">arkivet</div>' )
+		: array( 'code' => 200, 'body' => '<div data-elementor-id="999998">kategoriarkivets egen mall</div>' );
+};
+$job = CBX_Autopilot::job_for( array( 'id' => $arch, 'label' => 'Arkiv', 'widgets' => array( 'w1' ), 'manual' => 0 ) );
+ok( 'alt-url: allmänt arkiv jämförs på författararkivet', 0 === strpos( $job['original_url'], 'https://test.se/author/' ), $job['original_url'] );
+unset( $GLOBALS['_remote'] );
+
+// Sparad sektion utan egen adress som ingår i startsidan → jämförs där.
+$sect = wp_insert_post( array( 'post_title' => 'Fler nyheter', 'post_type' => 'elementor_library', 'post_status' => 'publish' ) );
+update_post_meta( $sect, '_elementor_template_type', 'section' );
+update_post_meta( $sect, '_elementor_data', wp_slash( wp_json_encode( array( array( 'id' => 'ss1', 'elType' => 'section', 'settings' => array(), 'elements' => array() ) ) ) ) );
+CBX_Autopilot::flush_url_cache();
+$GLOBALS['_remote_map'] = array( 'https://test.se/?cbx_check' => array( 'code' => 200, 'body' => '<div data-elementor-id="5"><div data-elementor-id="' . $sect . '">x</div></div>' ) );
+$GLOBALS['_remote'] = array( 'code' => 200, 'body' => '<div>annat</div>' );
+$job = CBX_Autopilot::job_for( array( 'id' => $sect, 'label' => 'Fler nyheter', 'widgets' => array( 'w1' ), 'manual' => 0 ) );
+ok( 'alt-url: sektion jämförs på sidan den ingår i', 'https://test.se/' === $job['original_url'] && false !== strpos( $job['note'], 'ingår i' ), $job );
+// Popup letas inte upp.
+update_post_meta( $sect, '_elementor_template_type', 'popup' );
+CBX_Autopilot::flush_url_cache();
+$job = CBX_Autopilot::job_for( array( 'id' => $sect, 'label' => 'Popup', 'widgets' => array( 'w1' ), 'manual' => 0 ) );
+ok( 'alt-url: popup lämnas ojämförd', '' === $job['original_url'] );
+$GLOBALS['_remote_map'] = array();
+unset( $GLOBALS['_remote'] );
+
 /* ---------- 7d. Förenklad arbetsgång: Stäng av, Ångra allt ---------- */
 
 ok( 'plan: switch', array( 'templates', 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' ) === CBX_Autopilot::plan( 'switch' ) );

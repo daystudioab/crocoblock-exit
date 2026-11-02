@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.11.1
+
+- Fler mallar jämförs visuellt: sparade sektioner och sidor utan egen adress
+  letas upp på de sidor där de ingår (t.ex. via en Mall-widget på startsidan),
+  och allmänna arkivmallar som trängs undan av ett kategoriarkiv jämförs på
+  etikett-, författar- eller datumarkiv. Popupper och loop-mallar lämnas som
+  förut.
+
 ## 1.11.0
 
 - Hopfällning ("Visa fler", jet-unfold) konverteras nu med funktionen kvar:
