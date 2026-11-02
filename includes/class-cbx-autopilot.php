@@ -386,6 +386,12 @@ class CBX_Autopilot {
 		if ( 0 === $offset ) {
 			$run['jobs'] = array();
 			self::flush_url_cache();
+			// Läk CSS-filer som tidigare versioner kunde ha byggt av kopians
+			// innehåll (förhandsvisning med tom cache): originalen byggs om av
+			// Elementor vid nästa visning, nu alltid från originalet.
+			foreach ( $docs as $d ) {
+				CBX_Plugin::clear_post_cache( isset( $d['source'] ) ? (int) $d['source'] : (int) $d['id'] );
+			}
 		}
 		foreach ( $slice as $doc ) {
 			$job = self::job_for( $doc );

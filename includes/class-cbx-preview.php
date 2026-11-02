@@ -67,7 +67,32 @@ class CBX_Preview {
 	}
 
 	public static function swap_id( $post_id ) {
-		return isset( self::$swap[ (int) $post_id ] ) ? self::$swap[ (int) $post_id ] : $post_id;
+		if ( ! isset( self::$swap[ (int) $post_id ] ) ) {
+			return $post_id;
+		}
+		// Elementor bygger originalets CSS-fil (post-ID.css) när cachen är tom
+		// – och slår då upp dokumentet med samma filter. Byttes det här skulle
+		// sajtens LIVE CSS-fil genereras av kopians innehåll (och sparas), så
+		// att besökarna fick fel stil på originalets widgets. CSS-filen för
+		// originalet ska därför alltid byggas av originalet.
+		if ( self::in_css_of( (int) $post_id ) ) {
+			return $post_id;
+		}
+		return self::$swap[ (int) $post_id ];
+	}
+
+	/** Pågår generering av CSS-filen för just den här posten? */
+	public static function in_css_of( $post_id ) {
+		if ( ! class_exists( '\Elementor\Core\Files\CSS\Post' ) ) {
+			return false;
+		}
+		foreach ( debug_backtrace( DEBUG_BACKTRACE_PROVIDE_OBJECT, 30 ) as $frame ) { // phpcs:ignore
+			if ( isset( $frame['object'] ) && $frame['object'] instanceof \Elementor\Core\Files\CSS\Post
+				&& method_exists( $frame['object'], 'get_post_id' ) && (int) $frame['object']->get_post_id() === (int) $post_id ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static function swap_css( $css_file ) {

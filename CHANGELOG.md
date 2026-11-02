@@ -1,5 +1,14 @@
 # Ändringar
 
+## 1.10.1
+
+- Viktig rättelse: när en förhandsvisning (originalsidan med kopian inbytt)
+  laddades medan Elementors CSS-cache var tom, byggde Elementor originalets
+  LIVE CSS-fil av kopians innehåll. Besökarna kunde då se originalets widgets
+  med fel stil tills cachen byggdes om. Originalets CSS-fil byggs nu alltid
+  av originalet, och Testa rensar originalens CSS-cache när det startar så
+  att filer som redan blivit fel byggs om rätt.
+
 ## 1.10.0
 
 - Lottie-animationer (jet-lottie) konverteras nu automatiskt till Elementor

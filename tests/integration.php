@@ -472,6 +472,15 @@ parse_str( (string) parse_url( CBX_Preview::swap_url( 'https://test.se/?p=' . $s
 $_GET = $q;
 CBX_Preview::maybe_swap();
 ok( 'swap: document id swapped', $sw_copy === apply_filters( 'elementor/documents/get/post_id', $start ) && 77 === apply_filters( 'elementor/documents/get/post_id', 77 ) && CBX_Preview::is_swap() );
+// Elementor genererar originalets CSS-fil med samma uppslag – då får inget bytas,
+// annars skrivs sajtens live-CSS av kopians innehåll.
+if ( ! class_exists( '\\Elementor\\Core\\Files\\CSS\\Post' ) ) {
+	eval( 'namespace Elementor\\Core\\Files\\CSS; class Post { protected $id; public function __construct( $id ) { $this->id = $id; } public function get_post_id() { return $this->id; } public function lookup() { return apply_filters( "elementor/documents/get/post_id", $this->id ); } }' );
+}
+$css_of_start = new \Elementor\Core\Files\CSS\Post( $start );
+$css_of_copy  = new \Elementor\Core\Files\CSS\Post( $sw_copy );
+ok( 'swap: originalets CSS-fil byggs av originalet', $start === $css_of_start->lookup() );
+ok( 'swap: rendering utanför CSS-bygget byts fortfarande', $sw_copy === apply_filters( 'elementor/documents/get/post_id', $start ) && $sw_copy === $css_of_copy->lookup() );
 $GLOBALS['_filters'] = array();
 $_GET = array( 'cbx_swap' => $start . '-' . $plain, 'cbx_swap_nonce' => wp_create_nonce( 'cbx_swap_' . $start . '-' . $plain ) );
 $rp = new ReflectionProperty( 'CBX_Preview', 'swap' );
