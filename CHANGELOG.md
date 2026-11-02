@@ -1,5 +1,12 @@
 # Ändringar
 
+## 1.9.4
+
+- Omdömeskarusellens reservregler (typografi/färg ur widgetens inställningar)
+  skrivs nu med :where(), så att stilen som översätts från Elementors
+  genererade CSS alltid vinner över dem. Tidigare kunde reservens
+  color:inherit slå ut den översatta färgen.
+
 ## 1.9.3
 
 - Stilöversättning för omdömeskaruseller: Elementors genererade CSS för

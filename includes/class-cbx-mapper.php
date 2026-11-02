@@ -859,7 +859,7 @@ class CBX_Mapper {
 			$text = $this->typo_css( $s, 'comment_typography' );
 			$text .= 'font-style:' . $this->v( $s, 'comment_typography_font_style', 'normal' ) . ';';
 			$text .= 'color:' . $this->v( $s, 'comment_color', 'inherit' ) . ';';
-			$css[] = 'selector .elementor-testimonial__text{' . $text . '}';
+			$css[] = 'selector :where(.elementor-testimonial__text){' . $text . '}'; // :where – reservregel som översatt element-CSS ska vinna över.
 			$name  = $this->typo_css( $s, 'name_typography' );
 			$name .= 'font-style:' . $this->v( $s, 'name_typography_font_style', 'normal' ) . ';';
 			if ( '' !== $this->v( $s, 'name_color' ) ) {
@@ -868,13 +868,13 @@ class CBX_Mapper {
 			if ( '' !== ( $m = $this->box_css( $this->v( $s, 'name_margin', null ) ) ) ) {
 				$name .= 'margin:' . $m . ';';
 			}
-			$css[] = 'selector .elementor-testimonial__name{' . $name . '}';
+			$css[] = 'selector :where(.elementor-testimonial__name){' . $name . '}';
 			$pos   = $this->typo_css( $s, 'position_typography' );
 			if ( '' !== $this->v( $s, 'position_color' ) ) {
 				$pos .= 'color:' . $this->v( $s, 'position_color' ) . ';';
 			}
 			if ( '' !== $pos ) {
-				$css[] = 'selector .elementor-testimonial__title{' . $pos . '}';
+				$css[] = 'selector :where(.elementor-testimonial__title){' . $pos . '}';
 			}
 
 			$notes = array( 'Karusell – innehållet växlar, jämförs därför översiktligt.' );
