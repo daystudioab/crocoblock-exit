@@ -1,5 +1,21 @@
 # Ändringar
 
+## 1.11.0
+
+- Hopfällning ("Visa fler", jet-unfold) konverteras nu med funktionen kvar:
+  innehållet (mall eller text) visas i Elementor Pros Mall-/Text-widget och
+  tillägget lindar in det i samma mask, avdelare och knapp som Jet – med samma
+  hopfällda höjd per skärm, texter, tider och kurvor. Tidigare visades allt
+  innehåll direkt.
+- Sidnumrering (jet-blog-posts-pagination) konverteras automatiskt till
+  kortkoden [cbx_posts_pagination]: WordPress egen sidnumrering med Jets
+  markup och pilar.
+- Sökrutan (jet-search) blir kortkoden [cbx_search] med Jets uppbyggnad, så
+  att temats och widgetens fältstil gäller som förut (Elementor Pros sökruta
+  nollställde den). Sökrutor i popup blir fortfarande Pros sökruta.
+- Stilöversättning för alla tre, även sajtens egen CSS (t.ex. CSS Hero-regler
+  mot Jets klasser).
+
 ## 1.10.1
 
 - Viktig rättelse: när en förhandsvisning (originalsidan med kopian inbytt)

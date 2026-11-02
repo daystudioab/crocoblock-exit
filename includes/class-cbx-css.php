@@ -413,8 +413,40 @@ CSS
 				'base'     => '',
 			),
 			// JetBlocks Search / JetSearch → Search Form.
+			// JetBlocks Search → [cbx_search] (samma uppbyggnad, egna klasser).
 			'jet-search'     => array(
-				'prefixes' => array( '.jet-search', '.jet-ajax-search' ),
+				'prefixes' => array( '.jet-search' ),
+				'map'      => array(
+					'/\.jet-blocks-icon\b/'        => '',
+					'/\.jet-search__([\w-]+)/'     => '.cbx-search__$1',
+					'/\.jet-search(?![\w-])/'      => '.cbx-search',
+				),
+				'base'     => '',
+			),
+			// JetTricks Unfold → Mall/Text med CBX_Frontends hopfällning.
+			'jet-unfold'     => array(
+				'prefixes' => array( '.jet-unfold' ),
+				'map'      => array(
+					'/\.jet-tricks-icon\b/'        => '',
+					'/\.jet-unfold-state\b/'       => '.cbx-unfold-state',
+					'/\.jet-unfold__([\w-]+)/'     => '.cbx-unfold__$1',
+					'/\.jet-unfold(?![\w-])/'      => '.cbx-unfold',
+				),
+				'base'     => '',
+			),
+			// JetBlog Posts Pagination → [cbx_posts_pagination].
+			'jet-blog-posts-pagination' => array(
+				'prefixes' => array( '.jet-blog-arrow' ),
+				'map'      => array(
+					'/\.jet-blog-arrow\b/'         => '.cbx-blog-arrow',
+					'/\.jet-arrow-(prev|next)\b/'  => '.cbx-arrow-$1',
+					'/\.jet-blog(?![\w-])/'        => $same,
+				),
+				'base'     => '',
+			),
+			// JetSearch Ajax Search → Elementor Pros sökruta.
+			'jet-ajax-search' => array(
+				'prefixes' => array( '.jet-ajax-search' ),
 				'map'      => array(
 					'/\.jet-(ajax-)?search__form\b/'          => '.elementor-search-form__container',
 					'/\.jet-(ajax-)?search__field\b/'         => 'input.elementor-search-form__input',
@@ -470,7 +502,6 @@ CSS
 	public static function map_for( $type ) {
 		$alias = array(
 			'jet-mobile-menu'       => 'jet-mega-menu',
-			'jet-ajax-search'       => 'jet-search',
 			'jet-blog-smart-tiles'  => 'jet-blog-smart-listing',
 			'jet-team-member'       => 'jet-banner',
 		);

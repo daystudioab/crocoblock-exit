@@ -105,7 +105,10 @@ På tidningenm.se: 36 regler, varav 2 pekar på Crocoblock och 1 är skör. Typs
 | jet-inline-svg | Image | – |
 | jet-animated-box | Flip Box | ja |
 | jet-logo, jet-nav-menu, jet-mega-menu, jet-custom-menu, jet-mobile-menu | Site Logo/Title, Nav Menu | ja |
-| jet-search, jet-ajax-search | Search Form | ja (annars WP-sök) |
+| jet-search | Kortkod [cbx_search] – Jets uppbyggnad, temats fältstil behålls (i popup: Search Form) | nej |
+| jet-ajax-search | Search Form | ja (annars WP-sök) |
+| jet-unfold | Mall/Text + tilläggets hopfällning ("Visa fler") med Jets knapp, mått och animation | ja (annars visas allt) |
+| jet-blog-posts-pagination | Kortkod [cbx_posts_pagination] – WordPress sidnumrering med Jets pilar | nej |
 | jet-login, jet-blocks-cart, jet-blog-posts-navigation | Login, Menu Cart, Post Navigation | ja |
 | jet-listing-grid | Loop Grid (efter steg 3) | ja |
 | jet-listing-dynamic-field/-image/-link/-terms/-meta | Widgets med Elementor Pros dynamiska taggar | ja |

@@ -89,6 +89,8 @@ function update_option( $k, $v, $a = null ) { $GLOBALS['_opts'][ $k ] = $v; retu
 function delete_option( $k ) { unset( $GLOBALS['_opts'][ $k ] ); return true; }
 function wp_slash( $v ) { return is_array( $v ) ? array_map( 'wp_slash', $v ) : ( is_string( $v ) ? addslashes( $v ) : $v ); }
 function wp_unslash( $v ) { return is_array( $v ) ? array_map( 'wp_unslash', $v ) : ( is_string( $v ) ? stripslashes( $v ) : $v ); }
+function add_shortcode( $t, $cb ) { $GLOBALS['_shortcodes'][ $t ] = $cb; }
+function shortcode_atts( $pairs, $atts, $sc = '' ) { $out = array(); foreach ( $pairs as $k => $v ) { $out[ $k ] = array_key_exists( $k, (array) $atts ) ? $atts[ $k ] : $v; } return $out; }
 function wp_json_encode( $d, $o = 0 ) { return json_encode( $d, $o ); }
 function current_time( $t ) { return '2026-11-01 20:00:00'; }
 function maybe_serialize( $v ) { return ( is_array( $v ) || is_object( $v ) ) ? serialize( $v ) : $v; }
@@ -268,6 +270,7 @@ require dirname( __DIR__ ) . '/includes/class-cbx-queries.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-autopilot.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-stabilize.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-empty.php';
+require dirname( __DIR__ ) . '/includes/class-cbx-frontend.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-updater.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-csshero.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-admin.php';

@@ -191,7 +191,7 @@ ok( 'header conditions', array( 'include/general' ) === get_post_meta( $theme[ $
 ok( 'header term', array( 'header' ) === $GLOBALS['_terms'][ $theme[ $header ]['to'] ]['elementor_library_type'] );
 $hdata = CBX_Plugin::get_data( $theme[ $header ]['to'] );
 $htypes = array_map( function ( $w ) { return $w['widgetType']; }, $hdata[0]['elements'][0]['elements'] );
-ok( 'header widgets', array( 'image', 'nav-menu', 'search-form' ) === $htypes );
+ok( 'header widgets', array( 'image', 'nav-menu', 'shortcode' ) === $htypes, $htypes );
 ok( 'menu slug via term', 'meny-3' === $hdata[0]['elements'][0]['elements'][1]['settings']['menu'] );
 ok( 'single conditions', array( 'include/singular/in_category/4', 'include/singular/in_category/7' ) === get_post_meta( $theme[ $single ]['to'], CBX_Templates::PENDING, true ) );
 ok( 'originals untouched', 'jet-logo' === CBX_Plugin::get_data( $header )[0]['elements'][0]['elements'][0]['widgetType'] );
@@ -788,6 +788,53 @@ ok( 'empty: utf-8 bevaras vid prune', false !== strpos( $out, 'räksmörgås' ) 
 // Okänt id ändrar ingenting.
 $same = '<div class="elementor-element elementor-element-abc123 elementor-widget"><p>Hej</p></div>';
 ok( 'empty: okänt id lämnar html oförändrad', false !== strpos( CBX_Empty::prune_html( $same, array( 'ffffff' ) ), 'Hej' ) );
+
+/* ---------- CBX_Frontend: hopfällning, sidnumrering, sökruta ---------- */
+
+CBX_Frontend::reset();
+$uf = CBX_Frontend::unfold_html( '<p>Fler nyheter</p>', array( 'height' => 20, 'height_mobile' => 40, 'unfold_text' => 'Visa fler nyheter', 'fold_text' => 'Visa färre nyheter' ), '734f017' );
+ok( 'unfold: struktur som Jets', false !== strpos( $uf, '<div class="cbx-unfold__mask"><div class="cbx-unfold__content"><div class="cbx-unfold__content-inner"><p>Fler nyheter</p></div></div><div class="cbx-unfold__separator"></div></div>' ) );
+ok( 'unfold: knapp med text', false !== strpos( $uf, 'cbx-unfold__button elementor-button elementor-size-md' ) && false !== strpos( $uf, '>Visa fler nyheter</span>' ) );
+ok( 'unfold: hopfälld höjd per skärm', false !== strpos( $uf, '.elementor-element-734f017 .cbx-unfold:not(.cbx-unfold-state) .cbx-unfold__mask{height:20px}' ) && false !== strpos( $uf, '@media(max-width:767px){.elementor-element-734f017 .cbx-unfold:not(.cbx-unfold-state) .cbx-unfold__mask{height:40px}}' ) );
+ok( 'unfold: grundstil och skript en gång', 1 === substr_count( $uf, 'id="cbx-unfold-css"' ) && 1 === substr_count( $uf, 'id="cbx-unfold-js"' ) );
+$uf2 = CBX_Frontend::unfold_html( 'x', array( 'height' => 20, 'open' => true, 'fold_text' => 'Färre' ), 'abc123' );
+ok( 'unfold: andra gången utan grundstil, öppen visar fäll-ihop-text', false === strpos( $uf2, 'cbx-unfold-css' ) && false !== strpos( $uf2, 'cbx-unfold cbx-unfold-state' ) && false !== strpos( $uf2, '>Färre</span>' ) );
+
+// Filtret: bara widgets med cbx_unfold berörs.
+$fake = new class() { public $s = array(); public function get_data( $k ) { return $this->s; } public function get_id() { return 'aa11bb2'; } };
+ok( 'unfold-filter: vanlig widget orörd', 'orörd' === CBX_Frontend::unfold_content( 'orörd', $fake ) );
+$fake->s = array( 'cbx_unfold' => array( 'height' => 30, 'unfold_text' => 'Mer' ) );
+ok( 'unfold-filter: markerad widget lindas in', false !== strpos( CBX_Frontend::unfold_content( 'innehåll', $fake ), '<div class="cbx-unfold__content-inner">innehåll</div>' ) );
+
+// Mappern: jet-unfold med mall → Pros Mall-widget med hopfällning.
+$mapper_pro = CBX_Plugin::mapper( array( 'has_pro' => true ) );
+list( $uo, $ul ) = $mapper_pro->convert_document( array( array( 'id' => 's1', 'elType' => 'section', 'settings' => array(), 'elements' => array( array( 'id' => 'c1', 'elType' => 'column', 'settings' => array(), 'elements' => array(
+	array( 'id' => '734f017', 'elType' => 'widget', 'widgetType' => 'jet-unfold', 'settings' => array( 'content_type' => 'template', 'template_id' => '6367', 'mask_height' => array( 'unit' => 'px', 'size' => 20 ), 'button_unfold_text' => 'Visa fler nyheter', 'button_fold_text' => 'Visa färre nyheter', 'fold' => '', '_css_classes' => 'load-more' ), 'elements' => array() ),
+) ) ) ) ) );
+$uw = $uo[0]['elements'][0]['elements'][0];
+ok( 'unfold-mappning: Mall-widget med inställningar', 'template' === $uw['widgetType'] && '6367' === $uw['settings']['template_id'] && 20.0 === $uw['settings']['cbx_unfold']['height'] && 'Visa fler nyheter' === $uw['settings']['cbx_unfold']['unfold_text'] && empty( $uw['settings']['cbx_unfold']['open'] ) );
+ok( 'unfold-mappning: egen klass behålls', false !== strpos( $uw['settings']['_css_classes'], 'load-more' ) && false !== strpos( $uw['settings']['_css_classes'], 'cbx-from-jet-unfold' ) );
+
+// Sidnumrering.
+$GLOBALS['_pagination_args'] = null;
+if ( ! function_exists( 'get_the_posts_pagination' ) ) {
+	function get_the_posts_pagination( $args ) { $GLOBALS['_pagination_args'] = $args; return '<nav class="navigation pagination"><div class="nav-links"><a class="next page-numbers" href="/page/2/">' . $args['next_text'] . '</a></div></nav>'; }
+}
+CBX_Frontend::reset();
+$pg = CBX_Frontend::sc_pagination( array( 'prev' => 'Föregående', 'next' => 'Nästa' ) );
+ok( 'sidnumrering: WordPress egen, i omslag', false !== strpos( $pg, '<div class="cbx-posts-pagination"><nav class="navigation pagination">' ) && false !== strpos( $pg, 'id="cbx-pagination-css"' ) );
+ok( 'sidnumrering: Jets pil efter nästa-texten', false !== strpos( $GLOBALS['_pagination_args']['next_text'], 'Nästa<i class="cbx-arrow-next cbx-blog-arrow"><svg' ) && 0 === strpos( $GLOBALS['_pagination_args']['prev_text'], '<i class="cbx-arrow-prev cbx-blog-arrow">' ) );
+
+// Sökruta.
+if ( ! function_exists( 'get_search_query' ) ) {
+	function get_search_query() { return 'älg "test"'; }
+}
+CBX_Frontend::reset();
+$sr = CBX_Frontend::sc_search( array( 'placeholder' => 'Sök', 'submit' => '0' ) );
+ok( 'sökruta: Jets uppbyggnad utan knapp', false !== strpos( $sr, '<form role="search" method="get" class="cbx-search__form" action="https://test.se/">' ) && false !== strpos( $sr, 'class="cbx-search__field" placeholder="Sök"' ) && false === strpos( $sr, '<button' ) );
+ok( 'sökruta: sökordet escapat', false !== strpos( $sr, 'value="älg &quot;test&quot;"' ) );
+$sr2 = CBX_Frontend::sc_search( array( 'placeholder' => 'Sök', 'submit' => '1', 'label' => 'Hitta' ) );
+ok( 'sökruta: knapp med etikett, grundstil bara första gången', false !== strpos( $sr2, '<button type="submit" class="cbx-search__submit"' ) && false !== strpos( $sr2, '<span class="cbx-search__submit-label">Hitta</span>' ) && false === strpos( $sr2, 'cbx-search-css' ) );
 
 echo ( $fails ? "\n$fails av $count kontroller misslyckades\n" : "Alla $count integrationskontroller OK\n" );
 exit( $fails ? 1 : 0 );

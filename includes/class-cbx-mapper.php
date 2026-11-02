@@ -1631,6 +1631,50 @@ class CBX_Mapper {
 	/* ---------- JetTricks ---------- */
 
 	protected function w_jet_unfold( array $s ) {
+		$type = (string) $this->v( $s, 'content_type', 'editor' );
+		if ( $this->ctx['has_pro'] && ( 'template' !== $type || (int) $this->v( $s, 'template_id', 0 ) > 0 ) ) {
+			// Hopfällningen återskapas av tillägget (CBX_Frontend): samma mask,
+			// avdelare, knapp, tider och kurvor som Jet.
+			$px = function ( $dim ) {
+				return is_array( $dim ) && isset( $dim['size'] ) && '' !== $dim['size'] && is_numeric( $dim['size'] ) ? (float) $dim['size'] : '';
+			};
+			$ms = function ( $dim, $def ) {
+				return is_array( $dim ) && isset( $dim['size'] ) && is_numeric( $dim['size'] ) ? (int) $dim['size'] : $def;
+			};
+			$h   = $px( $this->v( $s, 'mask_height', null ) );
+			$cfg = array(
+				'height'        => '' === $h ? 50 : $h,
+				'height_tablet' => $px( $this->v( $s, 'mask_height_tablet', null ) ),
+				'height_mobile' => $px( $this->v( $s, 'mask_height_mobile', null ) ),
+				'unfold_text'   => (string) $this->v( $s, 'button_unfold_text', 'Visa mer' ),
+				'fold_text'     => (string) $this->v( $s, 'button_fold_text', 'Visa mindre' ),
+				'open'          => 'yes' === $this->v( $s, 'fold', '' ),
+				'gradient'      => 'gradient' === $this->v( $s, 'separator_type', 'div' ),
+				'ud'            => $ms( $this->v( $s, 'unfold_duration', null ), 800 ),
+				'fd'            => $ms( $this->v( $s, 'fold_duration', null ), 300 ),
+				'ue'            => (string) $this->v( $s, 'unfold_easing', 'easeInOutSine' ),
+				'fe'            => (string) $this->v( $s, 'fold_easing', 'easeOutSine' ),
+			);
+			$notes = array();
+			foreach ( array( 'selected_button_unfold_icon', 'selected_button_fold_icon' ) as $ik ) {
+				if ( ! empty( $s[ $ik ]['value'] ) ) {
+					$notes[] = 'Knappens ikon följer inte med.';
+					break;
+				}
+			}
+			if ( 'yes' === $this->v( $s, 'hide_outside_click', '' ) || 'yes' === $this->v( $s, 'auto_hide', '' ) ) {
+				$notes[] = 'Automatisk ihopfällning (klick utanför/tidsgräns) följer inte med.';
+			}
+			foreach ( $s as $k => $val ) {
+				if ( is_string( $val ) && preg_match( '/control_type$/', $k ) && false !== stripos( $val, 'word' ) ) {
+					$notes[] = 'Hopfällning efter antal ord blir hopfällning efter höjd.';
+				}
+			}
+			if ( 'template' === $type ) {
+				return array( 'widgetType' => 'template', 'settings' => array( 'template_id' => (string) (int) $s['template_id'], 'cbx_unfold' => $cfg ), 'notes' => $notes );
+			}
+			return array( 'widgetType' => 'text-editor', 'settings' => array( 'editor' => (string) $this->v( $s, 'editor', '' ), 'cbx_unfold' => $cfg ), 'notes' => $notes );
+		}
 		$notes   = array( '"Visa mer"-funktionen försvann – hela texten visas direkt. Använd "Toggle" om den ska vara dold.' );
 		$content = $this->tab_content( $this->v( $s, 'content_type', 'editor' ), $this->v( $s, 'template_id' ), $this->v( $s, 'editor', '' ), $notes );
 		return array( 'widgetType' => 'text-editor', 'settings' => array( 'editor' => $content ), 'notes' => $notes );
@@ -1713,7 +1757,40 @@ class CBX_Mapper {
 	}
 
 	protected function w_jet_search( array $s ) {
-		return $this->search_widget( (string) $this->v( $s, 'search_placeholder', 'Sök …' ) );
+		$placeholder = (string) $this->v( $s, 'search_placeholder', 'Sök …' );
+		if ( in_array( $this->v( $s, 'show_search_in_popup', '' ), array( 'yes', 'true' ), true ) ) {
+			$res          = $this->search_widget( $placeholder );
+			$res['notes'] = array( 'Sökrutan i popup blev en vanlig Elementor-sökruta – kontrollera utseendet.' );
+			return $res;
+		}
+		// Samma uppbyggnad som Jets sökruta (CBX_Frontend), så att temats och
+		// widgetens fältstil gäller precis som förut.
+		$submit = array_key_exists( 'show_search_submit', $s ) ? $s['show_search_submit'] : 'true';
+		$submit = ( '' !== $submit && 'false' !== $submit && false !== $submit ) ? '1' : '0';
+		$icon   = isset( $s['selected_search_submit_icon'] ) && is_array( $s['selected_search_submit_icon'] ) ? $s['selected_search_submit_icon'] : array( 'value' => 'fas fa-search', 'library' => 'fa-solid' );
+		$sc     = '[cbx_search placeholder="' . $this->sc_attr( html_entity_decode( $placeholder, ENT_QUOTES, 'UTF-8' ) ) . '" submit="' . $submit . '"';
+		if ( '1' === $submit ) {
+			$sc .= ' label="' . $this->sc_attr( (string) $this->v( $s, 'search_submit_label', '' ) ) . '" icon="' . rawurlencode( (string) json_encode( $icon ) ) . '"';
+		}
+		$sc .= ']';
+		return array( 'widgetType' => 'shortcode', 'settings' => array( 'shortcode' => $sc ) );
+	}
+
+	/** Text som kortkodsattribut (citattecken och hakparenteser bryter kortkoden). */
+	protected function sc_attr( $text ) {
+		return str_replace( array( '"', '[', ']' ), array( '″', '(', ')' ), (string) $text );
+	}
+
+	protected function w_jet_blog_posts_pagination( array $s ) {
+		$sc = '[cbx_posts_pagination prev="' . $this->sc_attr( (string) $this->v( $s, 'prev_text', 'Previous' ) ) . '" next="' . $this->sc_attr( (string) $this->v( $s, 'next_text', 'Next' ) ) . '"]';
+		$notes = array();
+		foreach ( array( 'selected_prev_icon', 'selected_next_icon', 'prev_icon', 'next_icon' ) as $k ) {
+			if ( ! empty( $s[ $k ] ) && ( ! is_array( $s[ $k ] ) || ! empty( $s[ $k ]['value'] ) ) ) {
+				$notes[] = 'Egna pilikoner följer inte med – Jets standardpilar används.';
+				break;
+			}
+		}
+		return array( 'widgetType' => 'shortcode', 'settings' => array( 'shortcode' => $sc ), 'notes' => $notes );
 	}
 
 	protected function w_jet_ajax_search( array $s ) {

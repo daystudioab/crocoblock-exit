@@ -322,5 +322,27 @@ check( 'lottie extern url, hover, utan loop, hastighet', 'external_url' === $wd[
 list( , $log ) = $free->convert_document( doc( array( w( 'jet-lottie', $lt ) ) ) );
 check( 'lottie utan Pro → manuell', 'manual' === $log[0]['status'] );
 
+/* jet-search (som i Nyheter i Västerbottens sidhuvud) → [cbx_search] */
+list( $out ) = $pro->convert_document( doc( array( w( 'jet-search', array( 'search_placeholder' => 'Sök', 'show_search_submit' => '' ) ) ) ) );
+$wd = first_widget( $out );
+check( 'jet-search → kortkod utan knapp', 'shortcode' === $wd['widgetType'] && '[cbx_search placeholder="Sök" submit="0"]' === $wd['settings']['shortcode'], $wd['settings'] );
+list( $out ) = $pro->convert_document( doc( array( w( 'jet-search', array( 'search_placeholder' => 'Sök "här"' ) ) ) ) );
+$sc = first_widget( $out )['settings']['shortcode'];
+check( 'jet-search standard: knapp med ikon, citattecken säkrade', false !== strpos( $sc, 'submit="1"' ) && false !== strpos( $sc, 'icon="' ) && false !== strpos( $sc, 'placeholder="Sök ″här″"' ), $sc );
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-search', array( 'show_search_in_popup' => 'yes' ) ) ) ) );
+check( 'jet-search i popup → Pro-sökruta med not', 'search-form' === first_widget( $out )['widgetType'] && ! empty( $log[0]['notes'] ) );
+
+/* jet-blog-posts-pagination → [cbx_posts_pagination] */
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-blog-posts-pagination', array( 'prev_text' => 'Previous', 'next_text' => 'Next' ) ) ) ) );
+$wd = first_widget( $out );
+check( 'sidnumrering → kortkod', 'shortcode' === $wd['widgetType'] && '[cbx_posts_pagination prev="Previous" next="Next"]' === $wd['settings']['shortcode'] && 'converted' === $log[0]['status'] );
+
+/* jet-unfold utan Pro → texten visas direkt (som förut) */
+list( $out, $log ) = $free->convert_document( doc( array( w( 'jet-unfold', array( 'content_type' => 'editor', 'editor' => '<p>Text</p>' ) ) ) ) );
+check( 'unfold utan Pro → text-editor med not', 'text-editor' === first_widget( $out )['widgetType'] && ! isset( first_widget( $out )['settings']['cbx_unfold'] ) );
+list( $out ) = $pro->convert_document( doc( array( w( 'jet-unfold', array( 'content_type' => 'editor', 'editor' => '<p>Text</p>', 'mask_height' => array( 'size' => 80 ), 'fold' => 'yes' ) ) ) ) );
+$wd = first_widget( $out );
+check( 'unfold med text och Pro → text-editor med hopfällning, öppen', 'text-editor' === $wd['widgetType'] && 80.0 === $wd['settings']['cbx_unfold']['height'] && true === $wd['settings']['cbx_unfold']['open'] );
+
 echo ( $fails ? "\n$fails av $count kontroller misslyckades\n" : "Alla $count kontroller OK\n" );
 exit( $fails ? 1 : 0 );
