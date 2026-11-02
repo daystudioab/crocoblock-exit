@@ -11,7 +11,7 @@
 
 	// Måste stämma med tilläggets version – kontrolleras när en körning startar,
 	// så att en sida som laddades före en uppdatering inte kör gammal logik.
-	var CBX_JS_VERSION = '1.11.4';
+	var CBX_JS_VERSION = '1.11.5';
 
 	var WIDTHS = [
 		{ name: 'dator', w: 1440, h: 1000 },

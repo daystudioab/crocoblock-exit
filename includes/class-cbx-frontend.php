@@ -50,7 +50,6 @@ class CBX_Frontend {
 				. '.cbx-unfold__button.elementor-button{display:flex;flex-flow:row nowrap}'
 				. '.cbx-unfold__button:not(:empty){gap:5px}'
 				. '.cbx-unfold__button .cbx-unfold__button-text,.cbx-unfold__button .cbx-unfold__button-icon{color:inherit}'
-				. '.cbx-unfold__button-icon:empty{display:none}'
 				. '.cbx-unfold-state .cbx-unfold__mask{height:auto;mask-image:none;-webkit-mask-image:none}',
 			'pagination' => '.cbx-posts-pagination .navigation.pagination .nav-links{display:flex;align-items:center}'
 				. '.cbx-posts-pagination .navigation.pagination .nav-links .page-numbers{display:block;text-align:center}'

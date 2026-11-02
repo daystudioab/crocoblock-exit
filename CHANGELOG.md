@@ -1,5 +1,10 @@
 # Ändringar
 
+## 1.11.5
+
+- "Visa fler"-knappen får exakt Jets bredd: Jets tomma ikonplats ger 5 px
+  mellanrum i knappen, och den döljs inte längre.
+
 ## 1.11.4
 
 - Stabilare mätning i autopiloten: innehåll som hämtas efter sidladdningen
