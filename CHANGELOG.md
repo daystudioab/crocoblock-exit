@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.8.1
+
+- Uppdateringskontrollen har fått en reservväg: när GitHubs API inte går att nå
+  från servern (t.ex. ett webbhotell vars delade IP-adress slagit i GitHubs
+  anropstak) hämtas senaste versionen i stället via github.com:s omdirigering
+  av releases/latest, som inte är begränsad på samma sätt. Uppdateringar syns
+  därmed även på sådana servrar.
+
 ## 1.8.0
 - Dynamiska fält som visar ACF-fält (JetEngine "Dynamic Field" med källan ACF) konverteras nu automatiskt till Elementor Pros ACF-tagg – rubrik eller text beroende på fältets HTML-tagg. Tidigare krävde de handpåläggning och spärrade avstängningen av Crocoblock.
 

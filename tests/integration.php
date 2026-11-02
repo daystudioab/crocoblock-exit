@@ -687,6 +687,15 @@ ok( 'updater: same version → no package (WordPress lists it as up to date)', i
 $GLOBALS['_remote_map'] = array( $api => $rel( $newer, 'source.zip' ) );
 CBX_Updater::forget();
 ok( 'updater: release without the plugin zip is ignored', false === CBX_Updater::check( false, array(), $base, array() ) );
+// API:t onåbart (t.ex. delad IP som slagit i anropstaket) → reservvägen via
+// github.com:s omdirigering av /releases/latest används i stället.
+$GLOBALS['_remote_map'] = array(
+	$api => array( 'code' => 403, 'body' => '{"message":"rate limited"}' ),
+	'https://github.com/daystudioab/crocoblock-exit/releases/latest' => array( 'code' => 302, 'body' => '', 'headers' => array( 'location' => 'https://github.com/daystudioab/crocoblock-exit/releases/tag/' . $newer ) ),
+);
+CBX_Updater::forget();
+$u = CBX_Updater::check( false, array(), $base, array() );
+ok( 'updater: api blocked → redirect fallback finds release', is_array( $u ) && ltrim( $newer, 'v' ) === $u['version'] && 'https://github.com/daystudioab/crocoblock-exit/releases/download/' . $newer . '/crocoblock-exit.zip' === $u['package'] );
 $GLOBALS['_remote_map'] = array( $api => array( 'code' => 403, 'body' => '{"message":"rate limited"}' ) );
 CBX_Updater::forget();
 ok( 'updater: GitHub error → no update, no crash', false === CBX_Updater::check( false, array(), $base, array() ) && array( 'version' => '' ) === get_transient( CBX_Updater::CACHE ) );

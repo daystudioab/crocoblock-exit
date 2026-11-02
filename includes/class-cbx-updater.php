@@ -48,6 +48,20 @@ class CBX_Updater {
 		if ( is_array( $cached ) ) {
 			return empty( $cached['version'] ) ? null : $cached;
 		}
+		$data = self::from_api();
+		if ( ! $data ) {
+			// GitHubs API kan vara onåbart från servern (t.ex. ett webbhotell vars
+			// delade IP slagit i GitHubs anropstak). Själva github.com är inte
+			// begränsat på samma sätt: /releases/latest pekar om till senaste
+			// versionens sida, och versionsnumret står i adressen.
+			$data = self::from_redirect();
+		}
+		// Misslyckade frågor cachas kortare, så att GitHub inte frågas vid varje sidvisning.
+		set_transient( self::CACHE, $data ? $data : array( 'version' => '' ), $data ? self::CACHE_TTL : HOUR_IN_SECONDS );
+		return $data;
+	}
+
+	protected static function from_api() {
 		$res = wp_remote_get(
 			'https://api.github.com/repos/' . self::REPO . '/releases/latest',
 			array(
@@ -58,30 +72,50 @@ class CBX_Updater {
 				),
 			)
 		);
-		$data = null;
-		if ( ! is_wp_error( $res ) && 200 === (int) wp_remote_retrieve_response_code( $res ) ) {
-			$json = json_decode( (string) wp_remote_retrieve_body( $res ), true );
-			if ( is_array( $json ) && ! empty( $json['tag_name'] ) && empty( $json['draft'] ) && empty( $json['prerelease'] ) ) {
-				$package = '';
-				foreach ( isset( $json['assets'] ) ? (array) $json['assets'] : array() as $asset ) {
-					if ( isset( $asset['name'], $asset['browser_download_url'] ) && self::ASSET === $asset['name'] ) {
-						$package = $asset['browser_download_url'];
-					}
-				}
-				if ( $package ) {
-					$data = array(
-						'version' => ltrim( (string) $json['tag_name'], 'vV' ),
-						'package' => $package,
-						'url'     => isset( $json['html_url'] ) ? $json['html_url'] : 'https://github.com/' . self::REPO,
-						'notes'   => isset( $json['body'] ) ? (string) $json['body'] : '',
-						'date'    => isset( $json['published_at'] ) ? (string) $json['published_at'] : '',
-					);
-				}
+		if ( is_wp_error( $res ) || 200 !== (int) wp_remote_retrieve_response_code( $res ) ) {
+			return null;
+		}
+		$json = json_decode( (string) wp_remote_retrieve_body( $res ), true );
+		if ( ! is_array( $json ) || empty( $json['tag_name'] ) || ! empty( $json['draft'] ) || ! empty( $json['prerelease'] ) ) {
+			return null;
+		}
+		$package = '';
+		foreach ( isset( $json['assets'] ) ? (array) $json['assets'] : array() as $asset ) {
+			if ( isset( $asset['name'], $asset['browser_download_url'] ) && self::ASSET === $asset['name'] ) {
+				$package = $asset['browser_download_url'];
 			}
 		}
-		// Misslyckade frågor cachas kortare, så att GitHub inte frågas vid varje sidvisning.
-		set_transient( self::CACHE, $data ? $data : array( 'version' => '' ), $data ? self::CACHE_TTL : HOUR_IN_SECONDS );
-		return $data;
+		if ( ! $package ) {
+			return null;
+		}
+		return array(
+			'version' => ltrim( (string) $json['tag_name'], 'vV' ),
+			'package' => $package,
+			'url'     => isset( $json['html_url'] ) ? $json['html_url'] : 'https://github.com/' . self::REPO,
+			'notes'   => isset( $json['body'] ) ? (string) $json['body'] : '',
+			'date'    => isset( $json['published_at'] ) ? (string) $json['published_at'] : '',
+		);
+	}
+
+	protected static function from_redirect() {
+		$res = wp_remote_get(
+			'https://github.com/' . self::REPO . '/releases/latest',
+			array( 'timeout' => 10, 'redirection' => 0, 'headers' => array( 'User-Agent' => 'crocoblock-exit/' . CBX_VERSION ) )
+		);
+		if ( is_wp_error( $res ) ) {
+			return null;
+		}
+		$loc = (string) wp_remote_retrieve_header( $res, 'location' );
+		if ( ! preg_match( '#/releases/tag/(v?[0-9][\w.-]*)#', $loc, $m ) ) {
+			return null;
+		}
+		return array(
+			'version' => ltrim( $m[1], 'vV' ),
+			'package' => 'https://github.com/' . self::REPO . '/releases/download/' . $m[1] . '/' . self::ASSET,
+			'url'     => 'https://github.com/' . self::REPO . '/releases/tag/' . $m[1],
+			'notes'   => '',
+			'date'    => '',
+		);
 	}
 
 	/**

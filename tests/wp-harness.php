@@ -246,6 +246,7 @@ function plugin_basename( $f ) { return basename( dirname( $f ) ) . '/' . basena
 function wpautop( $s ) { return '<p>' . str_replace( "\n\n", '</p><p>', $s ) . '</p>'; }
 if ( ! defined( 'HOUR_IN_SECONDS' ) ) { define( 'HOUR_IN_SECONDS', 3600 ); }
 function wp_remote_retrieve_response_code( $r ) { return $r['code']; }
+function wp_remote_retrieve_header( $r, $h ) { return isset( $r['headers'][ strtolower( $h ) ] ) ? $r['headers'][ strtolower( $h ) ] : ( $r['headers'][ $h ] ?? '' ); }
 function wp_remote_retrieve_body( $r ) { return $r['body']; }
 function wp_update_custom_css_post( $css ) { $GLOBALS['_custom_css'] = $css; return true; }
 function activate_plugin( $f ) { $GLOBALS['_active_plugins'][] = $f; return null; }
