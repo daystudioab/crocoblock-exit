@@ -315,6 +315,23 @@ selector .elementor-posts-container .elementor-post__excerpt p{margin:0;color:in
 CSS
 ,
 			),
+			// JetElements Testimonials → Testimonial Carousel.
+			'jet-testimonials' => array(
+				'prefixes' => array( '.jet-testimonials' ),
+				'map'      => array(
+					'/\.jet-testimonials__comment\b/'  => '.elementor-testimonial__text',
+					'/\.jet-testimonials__name\b/'     => '.elementor-testimonial__name',
+					'/\.jet-testimonials__position\b/' => '.elementor-testimonial__title',
+					'/\.jet-testimonials__content\b/'  => '.elementor-testimonial__content',
+					// Betyget ritas i stället med CSS av konverteringen; figur/ikon har ingen motsvarighet.
+					'/\.jet-testimonials__(rating|figure|tag|icon)\b[^\s>]*/' => '.cbx-unmapped',
+					'/\.jet-testimonials__item-inner\b/' => '.elementor-testimonial',
+					'/\.jet-testimonials__item(?![\w-])/' => '.swiper-slide',
+					'/\.jet-testimonials__instance\b/' => $same,
+					'/\.jet-testimonials(?![\w-])(\.[\w-]+)*/' => $same,
+				),
+				'base'     => '',
+			),
 			// JetBlog Smart Listing → Posts (classic).
 			'jet-blog-smart-listing' => array(
 				'prefixes' => array( '.jet-smart-listing' ),

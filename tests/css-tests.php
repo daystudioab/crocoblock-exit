@@ -174,5 +174,17 @@ $hero = CBX_Css::translate_site_css( '.day-related img.post-thumbnail__img.wp-po
 t( 'site css: jet thumbnail class detected', 1 === $hero['translated'], $hero );
 t( 'site css: custom class on widget itself or wrapper', has( $hero['css'], 'body .day-related.cbx-from-jet-posts.cbx-from-jet-posts.cbx-from-jet-posts img' ) && has( $hero['css'], 'body .day-related .cbx-from-jet-posts.cbx-from-jet-posts.cbx-from-jet-posts img' ), $hero['css'] );
 
+/* jet-testimonials: Elementors genererade element-CSS (Husvagnshusets sidfot)
+   översätts till Pro-karusellens klasser, så vit text m.m. följer med. */
+$tst = '.elementor-277 .elementor-element.elementor-element-ef1248d .jet-testimonials__comment{order:4;text-align:center;color:#ffffff;font-family:"Euclid", Sans-serif;font-size:18px;font-weight:400;line-height:23px;}'
+	. '.elementor-277 .elementor-element.elementor-element-ef1248d .jet-testimonials__name{color:#008CD3;font-size:10px;text-transform:uppercase;}'
+	. '.elementor-277 .elementor-element.elementor-element-ef1248d .jet-testimonials__rating{font-size:15px;}'
+	. '.elementor-277 .elementor-element.elementor-element-annan .jet-testimonials__comment{color:#000;}';
+$t = CBX_Css::element_css( 'jet-testimonials', CBX_Css::parse( $tst ), 'ef1248d' );
+t( 'testimonials: kommentar → __text med färg', false !== strpos( $t['css'], 'selector .elementor-testimonial__text {' ) && false !== strpos( $t['css'], 'color:#ffffff' ) && false !== strpos( $t['css'], 'font-size:18px' ) );
+t( 'testimonials: namn → __name', false !== strpos( $t['css'], 'selector .elementor-testimonial__name {' ) && false !== strpos( $t['css'], 'text-transform:uppercase' ) );
+t( 'testimonials: betyget hamnar som referens (ritas av konverteringen)', 1 === $t['unmapped'] && false !== strpos( $t['css'], 'utan direkt motsvarighet' ) );
+t( 'testimonials: andra element berörs inte', false === strpos( $t['css'], 'color:#000' ) );
+
 echo ( $fails ? "\n$fails av $count CSS-kontroller misslyckades\n" : "Alla $count CSS-kontroller OK\n" );
 exit( $fails ? 1 : 0 );

@@ -1,5 +1,12 @@
 # Ändringar
 
+## 1.9.3
+
+- Stilöversättning för omdömeskaruseller: Elementors genererade CSS för
+  jet-testimonials (färger, typografi m.m. satta i widgetens stilflikar)
+  översätts nu till Pro-karusellens klasser och följer med som Custom CSS,
+  precis som för jet-posts och övriga karterade widgets.
+
 ## 1.9.2
 
 - Mallar som inte syns på sin gissade adress – t.ex. ett allmänt sidhuvud när
