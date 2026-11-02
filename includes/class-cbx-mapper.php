@@ -848,7 +848,72 @@ class CBX_Mapper {
 			if ( '' !== $this->v( $s, 'slides_to_show' ) ) {
 				$out['slides_per_view'] = (string) $s['slides_to_show'];
 			}
-			return array( 'widgetType' => 'testimonial-carousel', 'settings' => $out, 'notes' => array( 'Betyg (stjärnor) och datum följer inte med.' ) );
+			if ( 'fade' === $this->v( $s, 'effect' ) ) {
+				$out['effect'] = 'fade';
+			}
+
+			// Jets utseende sitter i widgetens egna stilinställningar; Pro-karusellens
+			// standard ser annorlunda ut (kursiv stil, andra färger och storlekar).
+			// Utseendet följer med som CSS på den nya widgeten.
+			$css  = array();
+			$text = $this->typo_css( $s, 'comment_typography' );
+			$text .= 'font-style:' . $this->v( $s, 'comment_typography_font_style', 'normal' ) . ';';
+			$text .= 'color:' . $this->v( $s, 'comment_color', 'inherit' ) . ';';
+			$css[] = 'selector .elementor-testimonial__text{' . $text . '}';
+			$name  = $this->typo_css( $s, 'name_typography' );
+			$name .= 'font-style:' . $this->v( $s, 'name_typography_font_style', 'normal' ) . ';';
+			if ( '' !== $this->v( $s, 'name_color' ) ) {
+				$name .= 'color:' . $this->v( $s, 'name_color' ) . ';';
+			}
+			if ( '' !== ( $m = $this->box_css( $this->v( $s, 'name_margin', null ) ) ) ) {
+				$name .= 'margin:' . $m . ';';
+			}
+			$css[] = 'selector .elementor-testimonial__name{' . $name . '}';
+			$pos   = $this->typo_css( $s, 'position_typography' );
+			if ( '' !== $this->v( $s, 'position_color' ) ) {
+				$pos .= 'color:' . $this->v( $s, 'position_color' ) . ';';
+			}
+			if ( '' !== $pos ) {
+				$css[] = 'selector .elementor-testimonial__title{' . $pos . '}';
+			}
+
+			$notes = array( 'Karusell – innehållet växlar, jämförs därför översiktligt.' );
+
+			// Stjärnbetyg: Pro-karusellen saknar betyg. När alla omdömen har samma
+			// betyg ritas stjärnorna med CSS i stället, med Jets färg och mått.
+			$ratings = array();
+			foreach ( $items as $it ) {
+				$r = (int) $this->v( $it, 'item_rating', 0 );
+				if ( $r > 0 ) {
+					$ratings[ $r ] = true;
+				}
+			}
+			if ( 1 === count( $ratings ) ) {
+				$r     = (int) key( $ratings );
+				$stars = str_repeat( '★', min( 5, $r ) ) . str_repeat( '☆', max( 0, 5 - $r ) );
+				$star  = 'content:"' . $stars . '";display:block;font-style:normal;';
+				$star .= 'color:' . $this->v( $s, 'rating_active_star_color', $this->v( $s, 'star_color', 'inherit' ) ) . ';';
+				if ( '' !== ( $fs = $this->size_css( $this->v( $s, 'rating_icon_size', null ) ) ) ) {
+					$star .= 'font-size:' . $fs . ';';
+				}
+				if ( '' !== ( $ls = $this->size_css( $this->v( $s, 'rating_icon_space', null ) ) ) ) {
+					$star .= 'letter-spacing:' . $ls . ';';
+				}
+				if ( '' !== ( $sm = $this->box_css( $this->v( $s, 'rating_star_margin', null ) ) ) ) {
+					$star .= 'margin:' . $sm . ';';
+				}
+				$css[] = 'selector .elementor-testimonial__text::before{' . $star . '}';
+			} elseif ( count( $ratings ) > 1 ) {
+				$notes[] = 'Betyg (stjärnor) följer inte med när omdömena har olika betyg.';
+			}
+			foreach ( $items as $it ) {
+				if ( '' !== $this->v( $it, 'item_date', '' ) ) {
+					$notes[] = 'Datum följer inte med.';
+					break;
+				}
+			}
+			$out['custom_css'] = trim( $this->v( $s, 'custom_css', '' ) . "\n" . implode( "\n", $css ) );
+			return array( 'widgetType' => 'testimonial-carousel', 'settings' => $out, 'notes' => $notes );
 		}
 		$first = $items ? reset( $items ) : array();
 		$out   = array(
@@ -877,6 +942,54 @@ class CBX_Mapper {
 	 *
 	 * @param array $d Crocoblocks standardvärden för widgeten.
 	 */
+	/**
+	 * CSS-deklarationer ur Elementors typografi-inställningar (prefix_typography).
+	 * Bara när typografin är satt till "custom" – annars ärvs utseendet.
+	 */
+	protected function typo_css( array $s, $p ) {
+		if ( 'custom' !== $this->v( $s, $p . '_typography' ) ) {
+			return '';
+		}
+		$css = '';
+		if ( '' !== ( $f = $this->v( $s, $p . '_font_family' ) ) ) {
+			$css .= 'font-family:"' . $f . '";';
+		}
+		foreach ( array( 'font_size' => 'font-size', 'line_height' => 'line-height', 'letter_spacing' => 'letter-spacing' ) as $k => $prop ) {
+			if ( '' !== ( $v = $this->size_css( $this->v( $s, $p . '_' . $k, null ) ) ) ) {
+				$css .= $prop . ':' . $v . ';';
+			}
+		}
+		foreach ( array( 'font_weight' => 'font-weight', 'font_style' => 'font-style', 'text_transform' => 'text-transform', 'text_decoration' => 'text-decoration' ) as $k => $prop ) {
+			if ( '' !== ( $v = $this->v( $s, $p . '_' . $k ) ) ) {
+				$css .= $prop . ':' . $v . ';';
+			}
+		}
+		return $css;
+	}
+
+	/** Elementor-mått ({unit, size}) som CSS-värde, eller tom sträng. */
+	protected function size_css( $dim ) {
+		if ( ! is_array( $dim ) || ! isset( $dim['size'] ) || '' === $dim['size'] || null === $dim['size'] ) {
+			return '';
+		}
+		$unit = isset( $dim['unit'] ) && '' !== $dim['unit'] ? $dim['unit'] : 'px';
+		return $dim['size'] . ( is_numeric( $dim['size'] ) ? $unit : '' );
+	}
+
+	/** Elementor-mått med fyra sidor som CSS-värde (margin/padding), eller tom sträng. */
+	protected function box_css( $dim ) {
+		if ( ! is_array( $dim ) || ! isset( $dim['top'] ) ) {
+			return '';
+		}
+		$unit = isset( $dim['unit'] ) && '' !== $dim['unit'] ? $dim['unit'] : 'px';
+		$out  = array();
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			$v = isset( $dim[ $side ] ) && '' !== $dim[ $side ] ? $dim[ $side ] : '0';
+			$out[] = $v . $unit;
+		}
+		return implode( ' ', $out );
+	}
+
 	protected function carousel_settings( array $s, array $d ) {
 		$arrows = $this->on( $s, 'arrows', $d['arrows'] );
 		$dots   = $this->on( $s, 'dots', $d['dots'] );

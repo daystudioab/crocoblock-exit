@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.9.1
+
+- Omdömeskaruseller (jet-testimonials) konverteras nu med utseendet intakt:
+  typografi, färger och marginaler för text och namn följer med till Elementor
+  Pros karusell, liksom tonings-effekten (fade). Stjärnbetygen ritas med CSS
+  när alla omdömen har samma betyg. Karusellen jämförs översiktligt av
+  autopiloten, eftersom innehållet växlar av sig självt.
+
 ## 1.9.0
 
 - Tomma dynamiska fält döljs nu vid visning, som Jet gjorde: listpunkter och

@@ -247,5 +247,57 @@ check( 'custom query without per page → site default', 10 === first_widget( $o
 list( $out, $log ) = $pro_q->convert_document( doc( array( w( 'jet-posts', array( 'use_custom_query' => 'true', 'custom_query' => '{trasig' ) ) ) ) );
 check( 'broken custom query noted', ! isset( first_widget( $out )['settings']['posts_query_id'] ) && false !== strpos( implode( ' ', $log[0]['notes'] ), 'inte gick att läsa' ) );
 
+/* jet-testimonials (som i Husvagnshusets sidfot): typografi, färger och
+   stjärnbetyg ska följa med, och karusellen jämförs översiktligt. */
+$hh = array(
+	'item_list' => array(
+		array( '_id' => 'a', 'item_comment' => 'Grymt bra service!', 'item_name' => 'Daniel', 'item_rating' => '5' ),
+		array( '_id' => 'b', 'item_comment' => 'Rekommenderas.', 'item_name' => 'Jenny', 'item_rating' => '5' ),
+	),
+	'effect' => 'fade',
+	'comment_typography_typography' => 'custom',
+	'comment_typography_font_family' => 'Euclid',
+	'comment_typography_font_size' => array( 'unit' => 'px', 'size' => 18 ),
+	'comment_typography_font_weight' => '400',
+	'comment_typography_line_height' => array( 'unit' => 'px', 'size' => 23 ),
+	'name_typography_typography' => 'custom',
+	'name_typography_font_size' => array( 'unit' => 'px', 'size' => 10 ),
+	'name_typography_font_weight' => '600',
+	'name_typography_text_transform' => 'uppercase',
+	'name_typography_letter_spacing' => array( 'unit' => 'px', 'size' => 6.7 ),
+	'name_color' => '#008CD3',
+	'name_margin' => array( 'unit' => 'px', 'top' => '15', 'right' => '0', 'bottom' => '0', 'left' => '7', 'isLinked' => false ),
+	'rating_active_star_color' => '#008CD3',
+	'rating_icon_size' => array( 'unit' => 'px', 'size' => 15 ),
+	'rating_icon_space' => array( 'unit' => 'px', 'size' => 13 ),
+	'rating_star_margin' => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '15', 'left' => '0' ),
+	'custom_css' => 'selector{outline:none;}',
+);
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-testimonials', $hh ) ) ) );
+$wd  = first_widget( $out );
+$css = $wd['settings']['custom_css'];
+check( 'testimonials → testimonial-carousel', 'testimonial-carousel' === $wd['widgetType'] );
+check( 'testimonials fade-effekt följer med', 'fade' === $wd['settings']['effect'] );
+check( 'testimonials texttypografi i css', false !== strpos( $css, '.elementor-testimonial__text{font-family:"Euclid";font-size:18px;line-height:23px;font-weight:400;font-style:normal;color:inherit;}' ) );
+check( 'testimonials namnstil i css', false !== strpos( $css, '.elementor-testimonial__name{' ) && false !== strpos( $css, 'font-size:10px' ) && false !== strpos( $css, 'text-transform:uppercase' ) && false !== strpos( $css, 'color:#008CD3' ) && false !== strpos( $css, 'margin:15px 0px 0px 7px' ) );
+check( 'testimonials stjärnor via css', false !== strpos( $css, "::before{content:\"★★★★★\";" ) && false !== strpos( $css, 'font-size:15px;letter-spacing:13px;margin:0px 0px 15px 0px' ) );
+check( 'testimonials befintlig custom_css bevaras', 0 === strpos( $css, 'selector{outline:none;}' ) );
+check( 'testimonials karusellnot för översiktlig jämförelse', (bool) preg_match( '/karusell/i', implode( ' ', $log[0]['notes'] ) ) );
+check( 'testimonials ingen betygsnot när betygen är lika', ! preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
+
+/* Olika betyg: inga css-stjärnor, men en not om det. */
+$hh2 = $hh;
+$hh2['item_list'][1]['item_rating'] = '3';
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-testimonials', $hh2 ) ) ) );
+$css = first_widget( $out )['settings']['custom_css'];
+check( 'testimonials olika betyg → inga stjärnor i css', false === strpos( $css, '::before' ) );
+check( 'testimonials olika betyg → not', (bool) preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
+
+/* Utan betyg alls: varken stjärnor eller not. */
+$hh3 = $hh;
+unset( $hh3['item_list'][0]['item_rating'], $hh3['item_list'][1]['item_rating'] );
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-testimonials', $hh3 ) ) ) );
+check( 'testimonials utan betyg → inga stjärnor, ingen not', false === strpos( first_widget( $out )['settings']['custom_css'], '::before' ) && ! preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
+
 echo ( $fails ? "\n$fails av $count kontroller misslyckades\n" : "Alla $count kontroller OK\n" );
 exit( $fails ? 1 : 0 );
