@@ -300,5 +300,27 @@ unset( $hh3['item_list'][0]['item_rating'], $hh3['item_list'][1]['item_rating'] 
 list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-testimonials', $hh3 ) ) ) );
 check( 'testimonials utan betyg → inga stjärnor, ingen not', false === strpos( first_widget( $out )['settings']['custom_css'], '::before' ) && ! preg_match( '/Betyg/', implode( ' ', $log[0]['notes'] ) ) );
 
+/* jet-lottie (som på salepoint.se startsida) → Pro Lottie */
+$lt = array(
+	'json_file'           => array( 'url' => 'https://ex.se/wp-content/uploads/Comp-1.json', 'id' => 462, 'source' => 'library' ),
+	'lottie_align_mobile' => 'center',
+	'lottie_width'        => array( 'unit' => 'px', 'size' => 256, 'sizes' => array() ),
+	'lottie_width_mobile' => array( 'unit' => 'px', 'size' => 180, 'sizes' => array() ),
+	'_margin_mobile'      => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0' ),
+);
+list( $out, $log ) = $pro->convert_document( doc( array( w( 'jet-lottie', $lt ) ) ) );
+$wd = first_widget( $out );
+check( 'lottie → lottie', 'lottie' === $wd['widgetType'] && 'converted' === $log[0]['status'] );
+check( 'lottie json-fil följer med', 'media_file' === $wd['settings']['source'] && 462 === $wd['settings']['source_json']['id'] );
+check( 'lottie spelas direkt och loopar (Jets standard)', 'none' === $wd['settings']['trigger'] && 'yes' === $wd['settings']['loop'] );
+check( 'lottie vänster på dator, centrerad på mobil', 'left' === $wd['settings']['align'] && 'center' === $wd['settings']['align_mobile'] );
+check( 'lottie bredd per skärm', 256 === $wd['settings']['width']['size'] && 180 === $wd['settings']['width_mobile']['size'] );
+check( 'lottie avancerat följer med', isset( $wd['settings']['_margin_mobile'] ) );
+list( $out ) = $pro->convert_document( doc( array( w( 'jet-lottie', array( 'json_url' => 'https://cdn.ex/anim.json', 'action_start' => 'on_hover', 'loop' => '', 'play_speed' => 2 ) ) ) ) );
+$wd = first_widget( $out );
+check( 'lottie extern url, hover, utan loop, hastighet', 'external_url' === $wd['settings']['source'] && 'on_hover' === $wd['settings']['trigger'] && '' === $wd['settings']['loop'] && 2.0 === $wd['settings']['play_speed']['size'] );
+list( , $log ) = $free->convert_document( doc( array( w( 'jet-lottie', $lt ) ) ) );
+check( 'lottie utan Pro → manuell', 'manual' === $log[0]['status'] );
+
 echo ( $fails ? "\n$fails av $count kontroller misslyckades\n" : "Alla $count kontroller OK\n" );
 exit( $fails ? 1 : 0 );

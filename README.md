@@ -92,6 +92,7 @@ På tidningenm.se: 36 regler, varav 2 pekar på Crocoblock och 1 är skör. Typs
 | jet-banner, jet-team-member | Image Box | – |
 | jet-services | Icon Box / Image Box | – |
 | jet-testimonials | Testimonial Carousel | ja (annars Testimonial) |
+| jet-lottie | Lottie | ja (annars manuellt) |
 | jet-carousel, jet-brands | Image Carousel / Gallery | – |
 | jet-slider | Slides | ja (annars Image Carousel) |
 | jet-images-layout, jet-portfolio | Gallery | – |

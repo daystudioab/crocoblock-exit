@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.10.0
+
+- Lottie-animationer (jet-lottie) konverteras nu automatiskt till Elementor
+  Pros Lottie-widget: JSON-fil eller extern adress, start (direkt, hover,
+  klick, i bild, scroll), loop, antal varv, hastighet, baklänges, renderare,
+  bredd och justering per skärmstorlek. Jets standard – spela direkt, i loop,
+  vänsterjusterat – sätts uttryckligen, eftersom Pros standard är en annan.
+
 ## 1.9.6
 
 - Sista höjdskillnaden i omdömeskarusellen: Pro-skinnets cite-element

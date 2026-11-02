@@ -817,6 +817,95 @@ class CBX_Mapper {
 		return array( 'widgetType' => 'image-box', 'settings' => $out, 'notes' => $notes );
 	}
 
+	/**
+	 * JetElements Lottie → Elementor Pros Lottie-widget.
+	 * Jet spelar som standard upp direkt och i loop; Pros standard är att
+	 * spela när animationen kommer in i bild, utan loop – därför sätts båda
+	 * uttryckligen. Jet vänsterjusterar som standard, Pro centrerar.
+	 */
+	protected function w_jet_lottie( array $s ) {
+		if ( ! $this->ctx['has_pro'] ) {
+			return array( 'manual' => self::manual_hint( 'jet-lottie' ) );
+		}
+		$out = array();
+		if ( $file = $this->media( $this->v( $s, 'json_file', null ) ) ) {
+			$out['source']      = 'media_file';
+			$out['source_json'] = $file;
+		} else {
+			$ext = '';
+			foreach ( array( 'json_url', 'path', 'json_path', 'external_url' ) as $k ) {
+				$u = $this->v( $s, $k, '' );
+				$u = is_array( $u ) ? ( isset( $u['url'] ) ? $u['url'] : '' ) : (string) $u;
+				if ( '' !== trim( $u ) ) {
+					$ext = trim( $u );
+					break;
+				}
+			}
+			if ( '' === $ext ) {
+				return array( 'manual' => 'Lottie utan JSON-fil. Lägg in animationen med Elementor Pros "Lottie"-widget.' );
+			}
+			$out['source']              = 'external_url';
+			$out['source_external_url'] = array( 'url' => $ext, 'is_external' => '', 'nofollow' => '' );
+		}
+
+		$start = (string) $this->v( $s, 'action_start', 'autoplay' );
+		$trig  = array(
+			'autoplay' => 'none',
+			'on_hover' => 'on_hover',
+			'hover'    => 'on_hover',
+			'on_click' => 'on_click',
+			'click'    => 'on_click',
+			'viewport' => 'arriving_to_viewport',
+			'on_viewport' => 'arriving_to_viewport',
+			'scroll'   => 'bind_to_scroll',
+			'on_scroll' => 'bind_to_scroll',
+		);
+		$out['trigger'] = isset( $trig[ $start ] ) ? $trig[ $start ] : 'none';
+		$notes          = array();
+		if ( ! isset( $trig[ $start ] ) ) {
+			$notes[] = sprintf( 'Okänd startinställning "%s" – animationen spelas nu upp direkt.', $start );
+		}
+		// Tom sträng betyder här uttryckligen "av" (v() skulle tolka den som osatt).
+		$loop = array_key_exists( 'loop', $s ) ? $s['loop'] : 'yes';
+		if ( 'yes' === $loop || true === $loop ) {
+			$out['loop'] = 'yes';
+			if ( '' !== ( $n = (string) $this->v( $s, 'loop_times', '' ) ) && is_numeric( $n ) ) {
+				$out['number_of_times'] = (int) $n;
+			}
+		} else {
+			$out['loop'] = '';
+		}
+		if ( 'yes' === $this->v( $s, 'reversed', '' ) ) {
+			$out['reverse_animation'] = 'yes';
+		}
+		$speed = $this->v( $s, 'play_speed', 1 );
+		$speed = is_array( $speed ) ? ( isset( $speed['size'] ) ? $speed['size'] : 1 ) : $speed;
+		if ( is_numeric( $speed ) && 1.0 !== (float) $speed ) {
+			$out['play_speed'] = array( 'unit' => 'px', 'size' => (float) $speed, 'sizes' => array() );
+		}
+		if ( in_array( $this->v( $s, 'renderer', 'svg' ), array( 'svg', 'canvas' ), true ) ) {
+			$out['renderer'] = $this->v( $s, 'renderer', 'svg' );
+		}
+		// Justering: Jet = vänster som standard (ärvs till alla bredder), Pro = centrerat.
+		$out['align'] = $this->v( $s, 'lottie_align', 'left' );
+		foreach ( array( 'tablet', 'mobile' ) as $bp ) {
+			if ( '' !== $this->v( $s, 'lottie_align_' . $bp, '' ) ) {
+				$out[ 'align_' . $bp ] = $s[ 'lottie_align_' . $bp ];
+			}
+		}
+		foreach ( array( '', '_tablet', '_mobile' ) as $bp ) {
+			$w = $this->v( $s, 'lottie_width' . $bp, null );
+			if ( is_array( $w ) && isset( $w['size'] ) && '' !== $w['size'] ) {
+				$out[ 'width' . $bp ] = array( 'unit' => isset( $w['unit'] ) ? $w['unit'] : 'px', 'size' => $w['size'], 'sizes' => array() );
+			}
+		}
+		if ( $this->has_url( $this->v( $s, 'link', '' ) ) ) {
+			$out['link_to']     = 'custom';
+			$out['custom_link'] = $this->url( $s['link'] );
+		}
+		return array( 'widgetType' => 'lottie', 'settings' => $out, 'notes' => $notes );
+	}
+
 	protected function w_jet_testimonials( array $s ) {
 		$items = array_filter( (array) $this->v( $s, 'item_list', array() ), 'is_array' );
 		if ( $this->ctx['has_pro'] ) {
