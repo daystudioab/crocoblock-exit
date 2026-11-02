@@ -1,5 +1,13 @@
 # Ändringar
 
+## 1.9.0
+
+- Tomma dynamiska fält döljs nu vid visning, som Jet gjorde: listpunkter och
+  widgets (rubrik, textredigerare, ikonlista) vars dynamiska innehåll (t.ex.
+  ett ACF-fält) är tomt tas bort, och rutor – sektioner och kolumner – som
+  därmed blir helt tomma döljs med dem. Statiskt innehåll berörs aldrig, och
+  i Elementors redigerare visas allt som vanligt.
+
 ## 1.8.1
 
 - Uppdateringskontrollen har fått en reservväg: när GitHubs API inte går att nå

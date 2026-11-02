@@ -709,5 +709,50 @@ list( , $log ) = $mapper_free->convert_document( CBX_Plugin::get_data( $start ) 
 $statuses = array_column( $log, 'status' );
 ok( 'free: jet-posts manual', in_array( 'manual', $statuses, true ) );
 
+/* ---------- Dölj tomma dynamiska fält (CBX_Empty) ---------- */
+
+// En ikonlista med två punkter: en dynamisk som blev tom (ingen text, ingen
+// länk) och en med innehåll. Bara den tomma tas bort.
+$il = '<ul class="elementor-icon-list-items">'
+	. '<li class="elementor-icon-list-item"><span class="elementor-icon-list-icon"><svg></svg></span><span class="elementor-icon-list-text"></span></li>'
+	. '<li class="elementor-icon-list-item"><a href="https://exempel.se/fil.pdf"><span class="elementor-icon-list-icon"><svg></svg></span><span class="elementor-icon-list-text">Rapport</span></a></li>'
+	. '</ul>';
+$r = CBX_Empty::strip_items( $il, array( true, true ) );
+ok( 'empty: tom dynamisk punkt tas bort, fylld behålls', 1 === $r['left'] && 1 === $r['removed'] && false !== strpos( $r['html'], 'Rapport' ) );
+
+// Samma lista men utan dynamisk koppling på den tomma punkten: inget tas bort.
+$r = CBX_Empty::strip_items( $il, array( false, true ) );
+ok( 'empty: statiskt tom punkt lämnas i fred', 2 === $r['left'] && 0 === $r['removed'] );
+
+// Tom punkt med riktig länk (ikon som länkar) behålls.
+$il2 = '<ul><li class="elementor-icon-list-item"><a href="https://exempel.se"><span class="elementor-icon-list-text"></span></a></li></ul>';
+$r = CBX_Empty::strip_items( $il2, array( true ) );
+ok( 'empty: tom text med riktig länk behålls', 1 === $r['left'] && 0 === $r['removed'] );
+
+// Alla punkter tomma → inget kvar.
+$il3 = '<ul><li class="elementor-icon-list-item"><span class="elementor-icon-list-text"> </span></li></ul>';
+$r = CBX_Empty::strip_items( $il3, array( true ) );
+ok( 'empty: helt tom lista ger left=0', 0 === $r['left'] );
+
+// prune_html: dold widget tas bort, och den inre sektionen (rutan med ram)
+// följer med när inga widgets finns kvar – men sektionen med innehåll står kvar.
+$page = '<section class="elementor-section elementor-element elementor-element-aaa111"><div class="elementor-column elementor-element elementor-element-bbb222"><div class="elementor-widget-wrap">'
+	. '<section class="elementor-section elementor-inner-section elementor-element elementor-element-box001"><div class="elementor-column elementor-element elementor-element-col001"><div class="elementor-widget-wrap">'
+	. '<div class="elementor-element elementor-element-wid001 elementor-widget elementor-widget-icon-list"><div class="elementor-widget-container"></div></div>'
+	. '</div></div></section>'
+	. '<div class="elementor-element elementor-element-wid002 elementor-widget elementor-widget-heading"><div class="elementor-widget-container"><h2>Kvar</h2></div></div>'
+	. '</div></div></section>';
+$out = CBX_Empty::prune_html( $page, array( 'wid001' ) );
+ok( 'empty: dold widget och dess tomma ruta försvinner', false === strpos( $out, 'wid001' ) && false === strpos( $out, 'box001' ) && false === strpos( $out, 'col001' ) );
+ok( 'empty: sektion med innehåll kvar', false !== strpos( $out, 'aaa111' ) && false !== strpos( $out, 'Kvar' ) );
+
+// Svenska tecken överlever DOM-rundturen.
+$out = CBX_Empty::prune_html( '<p>Åsa äter räksmörgås</p><div class="elementor-element elementor-element-zzz999 elementor-widget"></div>', array( 'zzz999' ) );
+ok( 'empty: utf-8 bevaras vid prune', false !== strpos( $out, 'räksmörgås' ) && false === strpos( $out, 'zzz999' ) );
+
+// Okänt id ändrar ingenting.
+$same = '<div class="elementor-element elementor-element-abc123 elementor-widget"><p>Hej</p></div>';
+ok( 'empty: okänt id lämnar html oförändrad', false !== strpos( CBX_Empty::prune_html( $same, array( 'ffffff' ) ), 'Hej' ) );
+
 echo ( $fails ? "\n$fails av $count kontroller misslyckades\n" : "Alla $count integrationskontroller OK\n" );
 exit( $fails ? 1 : 0 );

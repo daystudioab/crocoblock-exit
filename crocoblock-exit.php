@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Crocoblock-avveckling
  * Description:       Hittar Crocoblock-widgets, tillägg, mallar och innehållstyper och ersätter dem med Elementor / Elementor Pro – med stil, provkörning, förhandsgranskning, backup och återställning. Avvecklar även CSS Hero.
- * Version:           1.8.1
+ * Version:           1.9.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Studio Day
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CBX_VERSION', '1.8.1' );
+define( 'CBX_VERSION', '1.9.0' );
 define( 'CBX_FILE', __FILE__ );
 define( 'CBX_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CBX_URL', plugin_dir_url( __FILE__ ) );
@@ -36,6 +36,7 @@ require_once CBX_DIR . 'includes/class-cbx-preview.php';
 require_once CBX_DIR . 'includes/class-cbx-queries.php';
 require_once CBX_DIR . 'includes/class-cbx-autopilot.php';
 require_once CBX_DIR . 'includes/class-cbx-stabilize.php';
+require_once CBX_DIR . 'includes/class-cbx-empty.php';
 require_once CBX_DIR . 'includes/class-cbx-csshero.php';
 require_once CBX_DIR . 'includes/class-cbx-admin.php';
 require_once CBX_DIR . 'includes/class-cbx-updater.php';

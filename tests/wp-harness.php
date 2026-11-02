@@ -267,6 +267,7 @@ require dirname( __DIR__ ) . '/includes/class-cbx-preview.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-queries.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-autopilot.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-stabilize.php';
+require dirname( __DIR__ ) . '/includes/class-cbx-empty.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-updater.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-csshero.php';
 require dirname( __DIR__ ) . '/includes/class-cbx-admin.php';

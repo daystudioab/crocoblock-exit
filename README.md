@@ -168,6 +168,12 @@ wp crocoblock-exit autopilot --apply --switch   # genomför, kontrollera HTML, �
 
 WordPress 6.0+, PHP 7.4+, Elementor. Elementor Pro 3.8+ för Loop Grid; utan Pro konverteras bara det som går med gratisversionen.
 
+## Tomma dynamiska fält
+
+Widgets vars dynamiska innehåll (t.ex. ett ACF-fält) är tomt döljs vid
+visning, tillsammans med rutor som därmed blir helt tomma – samma beteende
+som Jets widgets hade. I Elementors redigerare visas allt som vanligt.
+
 ## Tester
 
 ```
