@@ -1,5 +1,14 @@
 # Ändringar
 
+## 1.11.4
+
+- Stabilare mätning i autopiloten: innehåll som hämtas efter sidladdningen
+  (t.ex. WP Popular Posts "Mest lästa") inväntas innan sidan mäts, och
+  layouten räknas som stilla först när även sektionernas höjder slutat ändras.
+  Efter scrollningen som laddar bilderna skickas scroll-händelser, så att
+  klistrade sidhuvuden återgår till sitt vanliga läge före mätningen.
+  Tidigare kunde samma sida ge olika resultat mellan körningar.
+
 ## 1.11.3
 
 - Rättelse till 1.11.2: CSS Hero-källan kopplades inte in i sajtens

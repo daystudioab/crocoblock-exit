@@ -11,7 +11,7 @@
 
 	// Måste stämma med tilläggets version – kontrolleras när en körning startar,
 	// så att en sida som laddades före en uppdatering inte kör gammal logik.
-	var CBX_JS_VERSION = '1.11.3';
+	var CBX_JS_VERSION = '1.11.4';
 
 	var WIDTHS = [
 		{ name: 'dator', w: 1440, h: 1000 },
@@ -553,8 +553,18 @@
 		var fonts = doc.fonts && doc.fonts.ready ? doc.fonts.ready : Promise.resolve();
 		return Promise.race([Promise.all([loaded, fonts]), sleep(10000)])
 			.then(function () {
-				try { win.scrollTo(0, 0); win.dispatchEvent(new win.Event('resize')); } catch (e) {}
-				return stable(doc);
+				// Tillbaka överst – och tala om det för klistrade sidhuvuden (de
+				// lyssnar på scroll och kan annars stå kvar i "scrollat" läge,
+				// t.ex. med logotypen dold).
+				try {
+					win.scrollTo(0, 0);
+					win.dispatchEvent(new win.Event('scroll'));
+					win.dispatchEvent(new win.Event('resize'));
+				} catch (e) {}
+				return sleep(150).then(function () {
+					try { win.dispatchEvent(new win.Event('scroll')); } catch (e) {}
+					return stable(doc);
+				});
 			})
 			.then(function () { return doc; });
 	}
@@ -563,9 +573,11 @@
 	function stable(doc) {
 		function sig() {
 			var s = doc.documentElement.scrollHeight + ':';
-			var roots = doc.querySelectorAll('[data-elementor-id]');
-			for (var i = 0; i < roots.length; i++) {
-				var r = roots[i].getBoundingClientRect();
+			// Dokumenten och deras sektioner (ett klistrat sidhuvud kan ändra en
+			// inre sektion utan att dokumentets höjd ändras).
+			var els = doc.querySelectorAll('[data-elementor-id], .elementor-section, .e-con');
+			for (var i = 0; i < els.length && i < 400; i++) {
+				var r = els[i].getBoundingClientRect();
 				s += Math.round(r.height) + ',';
 			}
 			return s;
@@ -578,13 +590,33 @@
 				var now = sig();
 				same = now === last ? same + 1 : 0;
 				last = now;
-				if (same >= 2 || ++tries > 25) {
+				// Innehåll som hämtas efter sidladdningen (t.ex. WP Popular Posts
+				// "Mest lästa") – vänta tills det har kommit.
+				var waiting = pending(doc) && tries < 25;
+				if ((same >= 2 && !waiting) || ++tries > 35) {
 					resolve();
 					return;
 				}
 				setTimeout(tick, 300);
 			})();
 		});
+	}
+
+	/** Finns det platshållare för innehåll som laddas in efteråt? */
+	function pending(doc) {
+		var wpp = doc.querySelectorAll('.wpp-shortcode, .wpp-widget-placeholder');
+		for (var i = 0; i < wpp.length; i++) {
+			var real = 0;
+			for (var k = 0; k < wpp[i].children.length; k++) {
+				if ('SCRIPT' !== wpp[i].children[k].tagName) {
+					real++;
+				}
+			}
+			if (!real) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function measureUrl(url, rootSel, ids, size) {
