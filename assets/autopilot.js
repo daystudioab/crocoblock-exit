@@ -11,7 +11,7 @@
 
 	// Måste stämma med tilläggets version – kontrolleras när en körning startar,
 	// så att en sida som laddades före en uppdatering inte kör gammal logik.
-	var CBX_JS_VERSION = '1.7.1';
+	var CBX_JS_VERSION = '1.7.2';
 
 	var WIDTHS = [
 		{ name: 'dator', w: 1440, h: 1000 },
@@ -53,6 +53,16 @@
 	}
 
 	/** Dold för en besökare? (display, visibility, opacity, hopfälld behållare, aria-hidden) */
+	function nodeName(el) {
+		var cls = String(el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className || '').split(/\s+/).filter(Boolean).slice(0, 2).join('.');
+		return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+	}
+
+	/**
+	 * Är noden dold för en besökare? Returnerar en funktion som ger ORSAKEN som
+	 * text ('display:none på …'), eller false när noden syns. (Sanningstestet
+	 * är alltså oförändrat; orsaken används i rapporten.)
+	 */
 	function hiddenChecker(win, stop) {
 		var cache = typeof Map !== 'undefined' ? new Map() : null;
 		return function hidden(node) {
@@ -66,14 +76,26 @@
 				}
 				chain.push(el);
 				var cs = win.getComputedStyle(el);
-				if (cs.display === 'none' || cs.visibility === 'hidden' || cs.visibility === 'collapse' || parseFloat(cs.opacity) === 0 || el.getAttribute('aria-hidden') === 'true') {
-					result = true;
+				if (cs.display === 'none') {
+					result = 'display:none på ' + nodeName(el);
+					break;
+				}
+				if (cs.visibility === 'hidden' || cs.visibility === 'collapse') {
+					result = 'visibility:' + cs.visibility + ' på ' + nodeName(el);
+					break;
+				}
+				if (parseFloat(cs.opacity) === 0) {
+					result = 'opacity:0 på ' + nodeName(el);
+					break;
+				}
+				if (el.getAttribute('aria-hidden') === 'true') {
+					result = 'aria-hidden på ' + nodeName(el);
 					break;
 				}
 				if (cs.overflow !== 'visible' || cs.overflowY !== 'visible' || cs.overflowX !== 'visible') {
 					var r = el.getBoundingClientRect();
 					if (r.width < 1 || r.height < 1) {
-						result = true;
+						result = 'hopfälld behållare (' + Math.round(r.width) + '×' + Math.round(r.height) + ', overflow) ' + nodeName(el);
 						break;
 					}
 				}
@@ -148,11 +170,17 @@
 		var imgs = el.querySelectorAll('img');
 		out.imgsTotal = imgs.length;
 		out.imgsHidden = 0;
+		out.imgsWhy = [];
 		for (var i = 0; i < imgs.length && out.imgs.length < MAX_IMGS; i++) {
 			var im = imgs[i];
 			var ib = im.getBoundingClientRect();
-			if (ib.width < 1 || ib.height < 1 || hidden(im)) {
+			// Orsaken söks från föräldern (bildens egen overflow:clip ger annars bara "0×0").
+			var why = (im.parentElement ? hidden(im.parentElement) : false) || hidden(im) || (ib.width < 1 || ib.height < 1 ? 'storlek ' + Math.round(ib.width) + '×' + Math.round(ib.height) : false);
+			if (why) {
 				out.imgsHidden++;
+				if (out.imgsWhy.length < 5) {
+					out.imgsWhy.push(imgKey(im.currentSrc || im.src) + ': ' + why);
+				}
 				continue;
 			}
 			out.imgs.push({ k: imgKey(im.currentSrc || im.src), x: round(ib.left - r.left), y: round(ib.top - r.top), w: round(ib.width), h: round(ib.height) });
@@ -323,7 +351,8 @@
 				if (imgMissing.length) {
 					// Skilj på "borta ur sidkoden" och "finns men är dold/utan storlek" – avgörande för felsökning.
 					var inDom = (pw.imgsTotal || 0) - pw.imgs.length;
-					add(imgMissing.length === ow.imgs.length ? 'fail' : 'warn', name + ': ' + imgMissing.length + ' av ' + ow.imgs.length + ' bilder saknas (' + imgMissing.slice(0, 3).join(', ') + '). Nya versionen har ' + (pw.imgsTotal || 0) + ' bilder i sidkoden' + (inDom > 0 ? ', varav ' + inDom + ' dolda eller utan storlek' : '') + '.');
+					var why = (pw.imgsWhy || []).filter(function (w) { return imgMissing.some(function (k) { return w.indexOf(k + ':') === 0; }); });
+					add(imgMissing.length === ow.imgs.length ? 'fail' : 'warn', name + ': ' + imgMissing.length + ' av ' + ow.imgs.length + ' bilder saknas (' + imgMissing.slice(0, 3).join(', ') + '). Nya versionen har ' + (pw.imgsTotal || 0) + ' bilder i sidkoden' + (inDom > 0 ? ', varav ' + inDom + ' dolda eller utan storlek' : '') + '.' + (why.length ? ' Orsak: ' + why.slice(0, 2).join('; ') + '.' : ''));
 				}
 				if (imgSized.length) {
 					add('warn', name + ': ' + imgSized.length + ' bilder har annan storlek eller plats (' + imgSized.slice(0, 2).join('; ') + ').');

@@ -258,6 +258,20 @@ function parseMultipart(body) {
 	m = await measurePair('font');
 	ok('diff: font size → warn with style detail', m.d.status === 'warn' && m.d.issues.some((i) => /storlek 22px → 20px/.test(i.msg)), m.d.issues);
 
+	// En dold bild rapporteras med orsak och element.
+	{
+		state.preview = 'good';
+		state.converted = false;
+		const o = await pg.goto(base + '/orig/home').then(() => pg.evaluate(() => CBXAuto.collect(document, '[data-elementor-id="230"]', ['e2'])));
+		const p2 = await pg.goto(base + '/prev/home').then(() => pg.evaluate(() => {
+			document.querySelector('.elementor-element-e2 .elementor-post__thumbnail__link').style.display = 'none';
+			return CBXAuto.collect(document, '[data-elementor-id="6620"]', ['e2']);
+		}));
+		const d2 = await pg.evaluate(([a, b]) => CBXAuto.diff(a, b, {}), [o, p2]);
+		const msg = JSON.stringify(d2.issues);
+		ok('diff: hidden image reported with cause', /bilder saknas \(tjar\)/.test(msg) && /Orsak: tjar: display:none på a\.elementor-post__thumbnail__link/.test(msg), d2.issues);
+	}
+
 	m = await measurePair('missing');
 	ok('diff: missing widget → fail', m.d.status === 'fail' && /saknas/.test(m.d.issues[0].msg), m.d.issues);
 

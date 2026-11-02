@@ -1,5 +1,8 @@
 # Ändringar
 
+## 1.7.2
+- När en bild rapporteras som dold anges orsaken: vilken egenskap (display, visibility, opacity, aria-hidden eller hopfälld behållare) och på vilket element.
+
 ## 1.7.1
 - En sida som laddades före en uppdatering av tillägget körde gammal logik i webbläsaren (t.ex. utan beslutspauserna). Nu upptäcks det när en körning startar: sidan laddas om och du klickar igen.
 - När bilder saknas i jämförelsen namnges de, och rapporten säger om bilden är borta ur sidkoden eller finns men är dold – avgörande för felsökning.
