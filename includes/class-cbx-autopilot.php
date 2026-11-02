@@ -385,6 +385,7 @@ class CBX_Autopilot {
 		$slice = array_slice( $docs, $offset, self::BATCH );
 		if ( 0 === $offset ) {
 			$run['jobs'] = array();
+			self::flush_url_cache();
 		}
 		foreach ( $slice as $doc ) {
 			$job = self::job_for( $doc );
@@ -451,6 +452,18 @@ class CBX_Autopilot {
 			$job['original_url'] = self::template_url( $job['type'], is_array( $conds ) ? $conds : array() );
 			if ( '' === $job['original_url'] ) {
 				$job['note'] = 'Mallen visas inte på någon egen sida (t.ex. popup, loop-mall eller sparad sektion) och jämförs inte visuellt.';
+			} elseif ( ! self::root_at_url( $job['original_url'], $job['original_root'] ) ) {
+				// En mer specifik mall kan gälla på den gissade adressen (t.ex. ett
+				// särskilt sidhuvud på startsidan, medan det allmänna sidhuvudet
+				// visas överallt annars). Prova andra sidor innan mallen lämnas
+				// ojämförd.
+				foreach ( self::alt_urls( $job['original_url'] ) as $alt ) {
+					if ( self::root_at_url( $alt, $job['original_root'] ) ) {
+						$job['original_url'] = $alt;
+						$job['note']         = 'Mallen syns inte på sin gissade adress (en mer specifik mall gäller där) – jämförs på ' . str_replace( home_url(), '', $alt ) . ' i stället.';
+						break;
+					}
+				}
 			}
 		}
 		if ( '' !== $job['original_url'] ) {
@@ -556,6 +569,37 @@ class CBX_Autopilot {
 			}
 		}
 		return '';
+	}
+
+	/** Andra sidor att prova när mallens rot inte syns på den gissade adressen. */
+	protected static function alt_urls( $skip ) {
+		$front = (int) get_option( 'page_on_front' );
+		$urls  = array();
+		foreach ( get_posts( array( 'post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 3, 'orderby' => 'date', 'order' => 'DESC', 'exclude' => $front ? array( $front ) : array() ) ) as $p ) {
+			$urls[] = get_permalink( $p->ID );
+		}
+		$urls[] = self::latest( 'post' );
+		$urls[] = home_url( '/' );
+		return array_values( array_unique( array_filter( array_diff( $urls, array( $skip ) ) ) ) );
+	}
+
+	/** Hämtad HTML per adress, inom en körning av ett steg. */
+	protected static $html_cache = array();
+
+	public static function flush_url_cache() {
+		self::$html_cache = array();
+	}
+
+	/** Syns dokumentets rot på adressen? Vid hämtningsfel antas ja. */
+	protected static function root_at_url( $url, $root_sel ) {
+		if ( ! array_key_exists( $url, self::$html_cache ) ) {
+			$res                      = wp_remote_get( add_query_arg( array( 'cbx_check' => time() ), $url ), array( 'timeout' => 8, 'redirection' => 3, 'sslverify' => false ) );
+			self::$html_cache[ $url ] = is_wp_error( $res ) ? null : (string) wp_remote_retrieve_body( $res );
+		}
+		if ( null === self::$html_cache[ $url ] ) {
+			return true;
+		}
+		return self::root_in_html( $root_sel, self::$html_cache[ $url ] );
 	}
 
 	protected static function latest( $post_type, array $tax_query = array() ) {

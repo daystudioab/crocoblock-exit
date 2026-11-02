@@ -596,6 +596,32 @@ ok( 'http check: vanished root fails for previously visible doc only', 1 === cou
 unset( $GLOBALS['_remote'] );
 delete_option( CBX_Autopilot::OPT_RUN );
 
+/* ---------- 7c3. Mall vars rot inte syns på gissad adress (allmänt sidhuvud
+   när startsidan har ett eget) – jämförs på en annan sida i stället ---------- */
+
+$hdr_gen = wp_insert_post( array( 'post_title' => 'Allmänt sidhuvud', 'post_type' => 'elementor_library', 'post_status' => 'publish' ) );
+update_post_meta( $hdr_gen, '_elementor_template_type', 'header' );
+update_post_meta( $hdr_gen, '_elementor_conditions', array( 'include/general' ) );
+update_post_meta( $hdr_gen, '_elementor_data', wp_slash( wp_json_encode( array( array( 'id' => 'sec1', 'elType' => 'section', 'settings' => array(), 'elements' => array() ) ) ) ) );
+$pg_alt = wp_insert_post( array( 'post_title' => 'Vanlig sida', 'post_type' => 'page', 'post_status' => 'publish' ) );
+$GLOBALS['_remote_map'] = array(
+	'https://test.se/?p=' . $pg_alt => array( 'code' => 200, 'body' => '<div data-elementor-id="' . $hdr_gen . '">sidhuvudet</div>' ),
+	'https://test.se/' => array( 'code' => 200, 'body' => '<div data-elementor-id="999999">startsidans eget sidhuvud</div>' ),
+);
+CBX_Autopilot::flush_url_cache();
+$job = CBX_Autopilot::job_for( array( 'id' => $hdr_gen, 'label' => 'Allmänt sidhuvud', 'widgets' => array( 'w1' ), 'manual' => 0 ) );
+ok( 'alt-url: mallen jämförs på sida där den visas', 'https://test.se/?p=' . $pg_alt === $job['original_url'] && false !== strpos( $job['note'], 'jämförs på' ) );
+ok( 'alt-url: förhandsvisningen följer med till samma sida', 0 === strpos( $job['preview_url'], 'https://test.se/?p=' . $pg_alt ) );
+
+// Syns roten på den gissade adressen behålls den.
+CBX_Autopilot::flush_url_cache();
+$GLOBALS['_remote_map'] = array(
+	'https://test.se/' => array( 'code' => 200, 'body' => '<div data-elementor-id="' . $hdr_gen . '">sidhuvudet</div>' ),
+);
+$job = CBX_Autopilot::job_for( array( 'id' => $hdr_gen, 'label' => 'Allmänt sidhuvud', 'widgets' => array( 'w1' ), 'manual' => 0 ) );
+ok( 'alt-url: gissad adress behålls när roten syns där', 'https://test.se/' === $job['original_url'] && '' === $job['note'] );
+$GLOBALS['_remote_map'] = array();
+
 /* ---------- 7d. Förenklad arbetsgång: Stäng av, Ångra allt ---------- */
 
 ok( 'plan: switch', array( 'templates', 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' ) === CBX_Autopilot::plan( 'switch' ) );

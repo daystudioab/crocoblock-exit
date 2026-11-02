@@ -1,5 +1,11 @@
 # Ändringar
 
+## 1.9.2
+
+- Mallar som inte syns på sin gissade adress – t.ex. ett allmänt sidhuvud när
+  startsidan har ett eget – jämförs nu på en annan sida där de faktiskt visas,
+  i stället för att lämnas ojämförda.
+
 ## 1.9.1
 
 - Omdömeskaruseller (jet-testimonials) konverteras nu med utseendet intakt:
