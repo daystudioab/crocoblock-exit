@@ -123,3 +123,10 @@
 	.cbx-flow-action { grid-column: 2; }
 }
 .cbx-flow-run .cbx-progress { max-width: none; }
+
+/* Beslutsruta */
+.cbx-auto-decide { border: 2px solid #dba617; background: #fcf9e8; border-radius: 6px; padding: 14px 18px; margin: 16px 0; }
+.cbx-auto-decide__title { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: #8a6d00; }
+.cbx-auto-decide__text { margin: 0 0 10px; max-width: 760px; }
+.cbx-auto-decide__actions { margin: 0; display: flex; gap: 10px; flex-wrap: wrap; }
+.cbx-auto-decide .button { pointer-events: auto; }

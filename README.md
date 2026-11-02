@@ -24,6 +24,8 @@ Installera `crocoblock-exit.zip` (Tillägg → Lägg till → Ladda upp) och öp
 2. **Genomför** – testar igen, konverterar sidorna och jämför den publicerade sajten med originalet. **Vid minsta fel återställs allt automatiskt.** Crocoblock är kvar och påslaget. Val: *Avveckla även CSS Hero* (förvalt om CSS Hero finns) och *Godta små avvikelser*.
 3. **Stäng av Crocoblock** – går bara när inget längre använder Crocoblock (annars visas vad som återstår). Sajten mäts, Crocoblock stängs av och de nya sidhuvudena/sidfötterna/popuperna publiceras, och sajten mäts igen. **Skiljer något slås Crocoblock på igen automatiskt.**
 
+**Du får alltid ta ställning.** Vid avvikelser eller fel pausar autopiloten, visar rapporten och frågar: efter testet (*Avbryt* / *Konvertera ändå*), efter konverteringen (*Återställ allt* / *Behåll konverteringen*) och efter avstängningen (*Slå på Crocoblock igen* / *Behåll avstängt*). När Crocoblock är avstängt kan besökarna se felet, så där räknas det säkra valet ner och körs automatiskt om du inte svarar inom 2 minuter.
+
 **Ångra allt** lägger tillbaka originalsidorna, mallarna och CSS Hero och slår på Crocoblock igen.
 
 Låt det här tillägget vara aktivt efteråt: det skriver ut översatt CSS, kör nyhetslistornas egna frågor och registrerar eventuella JetEngine-innehållstyper. Crocoblock-tilläggen kan tas bort när sajten fungerat ett tag.

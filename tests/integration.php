@@ -197,7 +197,12 @@ ok( 'single conditions', array( 'include/singular/in_category/4', 'include/singu
 ok( 'originals untouched', 'jet-logo' === CBX_Plugin::get_data( $header )[0]['elements'][0]['elements'][0]['widgetType'] );
 
 $again = CBX_Templates::migrate_all();
-ok( 'idempotent', 'skipped' === $again['listings'][0]['state'] && 'skipped' === $again['popups'][0]['state'] );
+ok( 'already migrated templates get refreshed content', 'refreshed' === $again['listings'][0]['state'] && 'refreshed' === $again['popups'][0]['state'] && 'refreshed' === $again['theme'][0]['state'] );
+ok( 'refresh keeps id, conditions and converts content', $theme[ $header ]['to'] === $again['theme'][0]['to'] && array( 'include/general' ) === get_post_meta( $theme[ $header ]['to'], CBX_Templates::PENDING, true ) && 'image' === CBX_Plugin::get_data( $theme[ $header ]['to'] )[0]['elements'][0]['elements'][0]['widgetType'] );
+// Simulera en mall migrerad med en äldre version: trasigt innehåll som rättas vid nästa körning.
+CBX_Plugin::save_data( $theme[ $header ]['to'], array( array( 'id' => 'gammal', 'elType' => 'section', 'settings' => array(), 'elements' => array() ) ) );
+CBX_Templates::migrate_all();
+ok( 'refresh repairs stale migration', 'image' === CBX_Plugin::get_data( $theme[ $header ]['to'] )[0]['elements'][0]['elements'][0]['widgetType'] );
 
 /* ---------- 4. Provkörning ---------- */
 
@@ -593,7 +598,7 @@ delete_option( CBX_Autopilot::OPT_RUN );
 
 /* ---------- 7d. Förenklad arbetsgång: Stäng av, Ångra allt ---------- */
 
-ok( 'plan: switch', array( 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' ) === CBX_Autopilot::plan( 'switch' ) );
+ok( 'plan: switch', array( 'templates', 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' ) === CBX_Autopilot::plan( 'switch' ) );
 ok( 'plan: undo', array( 'undo' ) === CBX_Autopilot::plan( 'undo' ) );
 
 // Konvertera på riktigt och mät upp jobben för avstängningen.

@@ -42,8 +42,10 @@ class CBX_Autopilot {
 	 */
 	public static function plan( $mode, array $opts = array() ) {
 		if ( 'switch' === $mode ) {
-			// Sajten mäts som den är (konverterad, Crocoblock på), stängs av och mäts igen.
-			return array( 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' );
+			// Mallarnas innehåll uppdateras först (gamla migreringar kan sakna
+			// senare rättelser), sedan mäts sajten som den är (konverterad,
+			// Crocoblock på), stängs av och mäts igen.
+			return array( 'templates', 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch' );
 		}
 		if ( 'undo' === $mode ) {
 			return array( 'undo' );
@@ -167,7 +169,7 @@ class CBX_Autopilot {
 				$bad   = array();
 				foreach ( $res as $rows ) {
 					foreach ( (array) $rows as $r ) {
-						if ( 'skipped' === $r['state'] ) {
+						if ( in_array( $r['state'], array( 'skipped', 'refreshed' ), true ) ) {
 							$had++;
 						} elseif ( 'migrated' === $r['state'] ) {
 							$n++;
@@ -176,7 +178,7 @@ class CBX_Autopilot {
 						}
 					}
 				}
-				return self::res( $bad ? 'warn' : 'ok', sprintf( '%d mallar kopierade som utkast', $n ) . ( $had ? sprintf( ', %d fanns redan', $had ) : '' ) . '.' . ( $bad ? ' Kräver handpåläggning: ' . implode( '; ', $bad ) : '' ) );
+				return self::res( $bad ? 'warn' : 'ok', sprintf( '%d mallar kopierade som utkast', $n ) . ( $had ? sprintf( ', %d fanns redan och fick sitt innehåll uppdaterat', $had ) : '' ) . '.' . ( $bad ? ' Kräver handpåläggning: ' . implode( '; ', $bad ) : '' ) );
 
 			case 'site_css':
 				$css = CBX_Site_CSS::build();

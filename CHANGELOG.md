@@ -1,5 +1,10 @@
 # Ändringar
 
+## 1.7.0
+- **Du får ta ställning.** Vid avvikelser eller fel pausar autopiloten och frågar i stället för att avgöra själv: efter testet (Avbryt / Konvertera ändå), efter konverteringen (Återställ allt / Behåll konverteringen) och efter avstängningen av Crocoblock (Slå på igen / Behåll avstängt). När Crocoblock är avstängt och sajten kan se trasig ut räknas det säkra valet ner och körs automatiskt om du inte svarar inom 2 minuter. Beslutet antecknas i rapporten.
+- **Redan migrerade mallar uppdateras.** Mallar som migrerades med en äldre version av tillägget fick aldrig senare konverteringsrättelser – t.ex. kunde sidhuvudets logga saknas när det gamla migrerade sidhuvudet publicerades. Nu konverteras innehållet om (id, status och visningsvillkor rörs inte) varje gång mallsteget körs, och "Stäng av Crocoblock" gör det alltid först.
+
+
 ## 1.6.3
 - Marginal, padding, ram och skugga från Avancerat-fliken dubbleras inte längre i den överförda stilen (de återskapas redan från inställningarna). Dubbleringen gjorde t.ex. relaterade artiklar 20 px smalare och förskjutna 10 px.
 - Sektionerna runt en karusell jämförs också löst – deras mätning innehåller samma rullande innehåll.

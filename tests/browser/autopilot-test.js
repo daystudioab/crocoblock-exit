@@ -111,7 +111,7 @@ function route(url) {
 const STEPS = {
 	test: ['scan', 'content_types', 'templates', 'site_css', 'dry', 'previews', 'stabilize', 'compare', 'cleanup'],
 	apply: ['scan', 'content_types', 'templates', 'site_css', 'dry', 'previews', 'stabilize', 'compare', 'convert', 'http_check', 'verify', 'cleanup'],
-	switch: ['live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch'],
+	switch: ['templates', 'live_jobs', 'baseline', 'switch', 'http_check_switch', 'verify_switch'],
 	undo: ['undo'],
 };
 
@@ -271,13 +271,26 @@ function parseMultipart(body) {
 
 	/* --- Hela körningen --- */
 	async function run(mode, setup) {
-		Object.assign(state, { converted: false, liveBroken: false, preview: 'good', calls: [], report: null, stable: '', stableMap: null, noStabilize: false, switched: false, breakOnSwitch: false }, setup || {});
+		setup = setup || {};
+		Object.assign(state, { converted: false, liveBroken: false, preview: 'good', calls: [], report: null, stable: '', stableMap: null, noStabilize: false, switched: false, breakOnSwitch: false }, setup);
 		await pg.goto(base + '/admin');
-		if (setup && setup.allowWarn) {
+		if (setup.allowWarn) {
 			await pg.check('[name="cbx_auto_allow_warn"]');
 		}
+		await pg.evaluate((t) => { window.CBX_DECIDE_TIMEOUT = t; }, setup.decideTimeout != null ? setup.decideTimeout : 600);
 		await pg.click('[data-cbx-auto-run="' + mode + '"]');
-		await pg.waitForFunction(() => !document.querySelector('[data-cbx-auto-run]').disabled && document.querySelector('.cbx-auto-verdict'), null, { timeout: 120000 });
+		const deadline = Date.now() + 120000;
+		let sawDecision = false;
+		for (;;) {
+			const done = await pg.evaluate(() => !document.querySelector('[data-cbx-auto-run]').disabled && !!document.querySelector('.cbx-auto-verdict'));
+			if (done) { break; }
+			if (Date.now() > deadline) { throw new Error('run(' + mode + ') blev aldrig klar'); }
+			const btn = await pg.$('.cbx-auto-decide button[data-key="' + (setup.choose || '') + '"]');
+			if (await pg.$('.cbx-auto-decide')) { sawDecision = true; }
+			if (btn) { await btn.click(); }
+			await pg.waitForTimeout(250);
+		}
+		state.sawDecision = sawDecision;
 		return {
 			verdict: await pg.textContent('.cbx-auto-verdict'),
 			steps: await pg.$$eval('[data-step]', (els) => els.map((e) => e.getAttribute('data-step') + ':' + e.className.replace(/.*--/, ''))),
@@ -311,19 +324,28 @@ function parseMultipart(body) {
 	ok('run apply: no rollback', !r.calls.includes('step:rollback'));
 	ok('run apply: site stays converted', state.converted === true);
 
-	r = await run('apply', { preview: 'gap' });
-	ok('run apply gap: stopped before convert', !r.calls.includes('step:convert') && /Inte genomfört/.test(r.verdict), r.calls);
+	// Avvikelse i testet → beslutsruta. Avbryt: ingenting ändras.
+	r = await run('apply', { preview: 'gap', choose: 'abort' });
+	ok('run apply gap, abort: stopped before convert', state.sawDecision && !r.calls.includes('step:convert') && /Du valde att avbryta/.test(r.verdict) && r.report.decisions.compare === 'abort', r.verdict);
+
+	// Samma avvikelse, men användaren väljer att fortsätta: konverteringen görs.
+	r = await run('apply', { preview: 'gap', choose: 'continue' });
+	ok('run apply gap, continue: converts on user decision', r.calls.includes('step:convert') && r.report.decisions.compare === 'continue' && /godkände testets avvikelser/.test(r.verdict), r.verdict);
 
 	r = await run('apply', { preview: 'gap', allowWarn: true });
 	ok('run apply gap allowed: converts', r.calls.includes('step:convert'));
 	ok('run apply gap allowed: live differs from baseline → still ok since live = good', /Genomfört|Inte/.test(r.verdict));
 
-	// Konverteringen gick bra i förhandsvisningen men den publicerade sidan blev trasig.
-	state.liveBroken = true;
-	r = await run('apply', { liveBroken: true });
-	ok('run apply broken live: rollback', r.calls.includes('step:rollback') && state.converted === false, r.calls);
-	ok('run apply broken live: verdict', /Inte genomfört/.test(r.verdict) && /återställt/i.test(r.verdict), r.verdict);
+	// Konverteringen gick bra i förhandsvisningen men den publicerade sidan blev trasig:
+	// beslutsruta – användaren väljer att återställa.
+	r = await run('apply', { liveBroken: true, choose: 'rollback' });
+	ok('run apply broken live, rollback: restored', state.sawDecision && r.calls.includes('step:rollback') && state.converted === false && r.report.decisions.verify === 'rollback', r.calls);
+	ok('run apply broken live: verdict', /Du valde att återställa/.test(r.verdict) && /återställt/i.test(r.verdict), r.verdict);
 	ok('run apply broken live: fail recorded', r.report.jobs[0].results.some((x) => x.phase === 'verify' && x.status === 'fail'));
+
+	// Samma läge, men användaren behåller konverteringen trots skillnaderna.
+	r = await run('apply', { liveBroken: true, choose: 'keep' });
+	ok('run apply broken live, keep: no rollback', !r.calls.includes('step:rollback') && state.converted === true && r.report.decisions.verify === 'keep' && /godkände skillnaderna/.test(r.verdict), r.verdict);
 
 	// Steg 3: stäng av Crocoblock – sajten mäts före och efter.
 	r = await run('switch', { converted: true });
@@ -332,8 +354,13 @@ function parseMultipart(body) {
 	ok('run switch: progress line shows verdict', /avstängt/.test(await pg.textContent('[data-cbx-auto-now]')));
 	ok('run switch: disabled button stays disabled', await pg.$eval('[data-cbx-auto-run="disabled-demo"]', (b) => b.disabled));
 
-	r = await run('switch', { converted: true, breakOnSwitch: true });
-	ok('run switch broken: rolled back', r.calls.includes('step:rollback') && state.switched === false && /Crocoblock är kvar/.test(r.verdict), [r.calls, r.verdict]);
+	// Trasigt utan Crocoblock: beslutsruta med nedräkning – inget svar → automatisk återställning.
+	r = await run('switch', { converted: true, breakOnSwitch: true, decideTimeout: 2 });
+	ok('run switch broken, timeout: rolled back automatically', r.calls.includes('step:rollback') && state.switched === false && /Du valde att återställa|Crocoblock är kvar/.test(r.verdict), [r.calls, r.verdict]);
+
+	// Samma läge, men användaren väljer att behålla avstängt.
+	r = await run('switch', { converted: true, breakOnSwitch: true, choose: 'keep' });
+	ok('run switch broken, keep: stays off on user decision', !r.calls.includes('step:rollback') && state.switched === true && /avstängt\. Du godkände skillnaderna/.test(r.verdict), r.verdict);
 
 	r = await run('undo', { converted: true });
 	ok('run undo: restored', /Allt är återställt/.test(r.verdict) && state.converted === false && r.calls.includes('step:undo'), r.verdict);

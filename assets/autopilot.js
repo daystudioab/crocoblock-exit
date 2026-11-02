@@ -613,7 +613,7 @@
 			'<div class="' + (counts.fail ? 'bad' : 'ok') + '"><strong>' + counts.fail + '</strong><span>med fel</span></div>' +
 			'<div><strong>' + counts.skip + '</strong><span>ej jämförda</span></div></div>';
 		var verdict = report.verdict ? '<p class="cbx-auto-verdict cbx-auto-verdict--' + esc(report.verdictLevel || 'ok') + '">' + esc(report.verdict) + '</p>' : '';
-		var meta = '<p class="cbx-meta">' + esc(report.mode === 'apply' ? 'Testa och genomför' : 'Test') + ' · ' + esc(report.finished || report.started || '') + '</p>';
+		var meta = '<p class="cbx-meta">' + esc({ test: 'Testa', apply: 'Genomför', 'switch': 'Stäng av Crocoblock', undo: 'Ångra allt' }[report.mode] || report.mode) + ' · ' + esc(report.finished || report.started || '') + '</p>';
 		var rows = report.jobs.map(function (j) {
 			var st = STATUS[j.status] || STATUS.skip;
 			var body = '';
@@ -808,6 +808,50 @@
 		});
 	}
 
+	/**
+	 * Beslutsruta: körningen pausar tills användaren väljer. Med timeout räknas
+	 * det förvalda (säkra) valet ner och körs automatiskt – används när
+	 * Crocoblock är avstängt och sajten kan se trasig ut för besökare.
+	 */
+	function decide(opts) {
+		return new Promise(function (resolve) {
+			var box = document.createElement('div');
+			box.className = 'cbx-auto-decide';
+			box.innerHTML = '<p class="cbx-auto-decide__title">Ditt beslut behövs</p><p class="cbx-auto-decide__text">' + esc(opts.text) + '</p><p class="cbx-auto-decide__actions"></p>';
+			var actions = box.querySelector('.cbx-auto-decide__actions');
+			var timer = null;
+			function done(key) {
+				if (timer) { clearInterval(timer); }
+				box.remove();
+				resolve(key);
+			}
+			var countBtn = null;
+			var countBase = '';
+			opts.choices.forEach(function (c) {
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'button' + (c.primary ? ' button-primary' : '');
+				b.dataset.key = c.key;
+				b.textContent = c.label;
+				b.addEventListener('click', function () { done(c.key); });
+				actions.appendChild(b);
+				if (c.key === opts.timeoutKey) { countBtn = b; countBase = c.label; }
+			});
+			reportEl.parentNode.insertBefore(box, reportEl);
+			try { box.scrollIntoView({ block: 'center' }); } catch (e) {}
+			var left = opts.timeout || 0;
+			if (left && countBtn) {
+				countBtn.textContent = countBase + ' (' + left + ' s)';
+				timer = setInterval(function () {
+					left--;
+					countBtn.textContent = countBase + ' (' + left + ' s)';
+					if (left <= 0) { done(opts.timeoutKey); }
+				}, 1000);
+			}
+			if (nowEl) { nowEl.textContent = 'Pausad – väntar på ditt beslut (se rutan ovanför rapporten).'; }
+		});
+	}
+
 	function runAutopilot(mode) {
 		var opts = {
 			csshero: !!(card.querySelector('[name="cbx_auto_csshero"]') || {}).checked,
@@ -831,6 +875,50 @@
 
 		function ok(status) {
 			return status === 'ok' || status === 'skip' || (status === 'warn' && opts.allow_warn);
+		}
+
+		/**
+		 * Paus vid avvikelse: användaren avgör om körningen ska fortsätta.
+		 * När Crocoblock är avstängt (switch-stegen) kan sajten se trasig ut
+		 * för besökare – då räknas det säkra valet ner och körs automatiskt.
+		 */
+		function askAbout(step, detail) {
+			var off = /switch/.test(step); // Crocoblock är avstängt just nu
+			var text, choices;
+			if (step === 'compare') {
+				text = 'Testet visar ' + detail + ' – granska rapporten nedan. Ingenting är ändrat på sajten än. Vill du konvertera ändå?';
+				choices = [
+					{ key: 'abort', label: 'Avbryt – ändra ingenting', primary: true },
+					{ key: 'continue', label: 'Konvertera ändå' }
+				];
+			} else if (off) {
+				text = 'Sajten skiljer sig från hur den såg ut med Crocoblock på' + (/http/.test(step) ? ' (' + detail + ')' : '') + ' – granska rapporten nedan. Crocoblock är AVSTÄNGT just nu, så besökarna kan se felet. Väljer du inget slås Crocoblock på igen när nedräkningen är klar.';
+				choices = [
+					{ key: 'rollback', label: 'Slå på Crocoblock igen', primary: true },
+					{ key: 'keep', label: 'Behåll avstängt trots skillnaderna' }
+				];
+			} else {
+				text = 'Den publicerade sajten skiljer sig från originalet' + (/http/.test(step) ? ' (' + detail + ')' : '') + ' – granska rapporten nedan. Crocoblock är fortfarande på. Vill du behålla konverteringen eller återställa allt?';
+				choices = [
+					{ key: 'rollback', label: 'Återställ allt', primary: true },
+					{ key: 'keep', label: 'Behåll konverteringen' }
+				];
+			}
+			var T = root.CBX_DECIDE_TIMEOUT != null ? root.CBX_DECIDE_TIMEOUT : 120;
+			return decide({ text: text, choices: choices, timeout: off ? T : 0, timeoutKey: 'rollback' }).then(function (choice) {
+				report.decisions = report.decisions || {};
+				report.decisions[step] = choice;
+				setStep(step, choice === 'continue' || choice === 'keep' ? 'warn' : 'fail', { continue: 'Du valde att fortsätta.', keep: 'Du valde att behålla.', abort: 'Du valde att avbryta.', rollback: 'Du valde att återställa.' }[choice]);
+				if (choice === 'continue' || choice === 'keep') {
+					return;
+				}
+				if (choice === 'abort') {
+					stop = 'Du valde att avbryta – ingenting är ändrat.';
+					return;
+				}
+				stop = 'Du valde att återställa.';
+				rollback = true;
+			});
 		}
 
 		post({ op: 'start', mode: mode, csshero: opts.csshero ? 1 : '', switch: opts.switch ? 1 : '', allow_warn: opts.allow_warn ? 1 : '' }).then(function (plan) {
@@ -884,10 +972,12 @@
 							var msg = { ok: 'Identiskt i alla tre bredder.', warn: 'Avvikelser – se rapporten.', fail: 'Fel – se rapporten.', skip: 'Inget att jämföra.' }[status];
 							setStep(step, status, msg);
 							report.steps[step] = status;
-							if (!ok(status)) {
-								stop = step === 'compare' ? 'Testet visar ' + (status === 'fail' ? 'fel' : 'avvikelser') + '.' : 'Den publicerade sajten skiljer sig från originalet.';
-								rollback = step !== 'compare';
+							if (ok(status)) { return; }
+							if (mode === 'test') {
+								stop = 'Testet visar ' + (status === 'fail' ? 'fel' : 'avvikelser') + '.';
+								return;
 							}
+							return askAbout(step, status === 'fail' ? 'fel' : 'avvikelser');
 						});
 					}
 					return serverStep(step).then(function (res) {
@@ -904,8 +994,12 @@
 							skipSwitch = true;
 						}
 						if (res.status === 'fail') {
+							if (step === 'http_check' || step === 'http_check_switch') {
+								// En bedömningsfråga, inte ett driftfel – låt användaren avgöra.
+								return askAbout(step, res.message);
+							}
 							stop = res.message;
-							rollback = ['convert', 'http_check', 'switch', 'http_check_switch', 'csshero'].indexOf(step) >= 0;
+							rollback = ['convert', 'switch', 'csshero'].indexOf(step) >= 0;
 						}
 					});
 				});
@@ -942,6 +1036,19 @@
 			} else {
 				report.verdictLevel = 'ok';
 				report.verdict = 'Genomfört: sajten är konverterad och ser ut som originalet' + (report.steps.switch === 'ok' ? ', och Crocoblock är avstängt.' : '.') + (report.steps.switch === 'warn' ? ' Crocoblock är kvar eftersom något fortfarande använder det.' : '');
+			}
+			// Körningen gick vidare på användarens beslut – säg det i stället för "ser ut som originalet".
+			var dec = report.decisions || {};
+			var keptLive = ['verify', 'verify_switch', 'http_check', 'http_check_switch'].some(function (k) { return dec[k] === 'keep'; });
+			if (!stop && (keptLive || dec.compare === 'continue')) {
+				report.verdictLevel = 'warn';
+				if (mode === 'switch') {
+					report.verdict = 'Crocoblock är avstängt. Du godkände skillnaderna mot originalet – se rapporten.';
+				} else if (keptLive) {
+					report.verdict = 'Genomfört: sajten är konverterad. Du godkände skillnaderna mot originalet – se rapporten.';
+				} else {
+					report.verdict += ' Du godkände testets avvikelser.';
+				}
 			}
 			renderReport(report);
 			if (nowEl) { nowEl.textContent = report.verdict; }

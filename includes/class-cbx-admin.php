@@ -467,7 +467,7 @@ class CBX_Admin {
 	}
 
 	protected static function state_label( $state ) {
-		$labels = array( 'migrated' => 'migrerad', 'skipped' => 'redan migrerad', 'manual' => 'manuellt', 'error' => 'fel' );
+		$labels = array( 'migrated' => 'migrerad', 'skipped' => 'redan migrerad', 'refreshed' => 'innehåll uppdaterat', 'manual' => 'manuellt', 'error' => 'fel' );
 		return isset( $labels[ $state ] ) ? $labels[ $state ] : $state;
 	}
 

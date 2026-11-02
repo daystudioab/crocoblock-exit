@@ -151,6 +151,29 @@ class CBX_Templates {
 		return array( $new, $log );
 	}
 
+	/**
+	 * Uppdaterar innehållet i en redan migrerad mall med senaste konverteringen.
+	 * Mallens id, status och visningsvillkor rörs inte – bara innehåll och stil.
+	 * Utan det här skulle mallar som migrerades med en äldre version av
+	 * tillägget aldrig få senare konverteringsrättelser.
+	 */
+	protected static function refresh_template( $old_id, $new_id, $context ) {
+		list( $data, $log ) = self::convert_data( $old_id, $context );
+		if ( ! $data ) {
+			return array( 'state' => 'skipped', 'notes' => array( 'Redan migrerad.' ), 'log' => array() );
+		}
+		CBX_Plugin::save_data( $new_id, $data );
+		delete_post_meta( $new_id, CBX_Styles::META_FREE );
+		CBX_Styles::store_free( $new_id, self::$pending_free );
+		self::$pending_free = array();
+		CBX_Styles::forget( $new_id );
+		CBX_Plugin::clear_post_cache( $new_id );
+		return array(
+			'state' => 'refreshed',
+			'notes' => array_merge( array( 'Redan migrerad – innehållet uppdaterat med senaste konverteringen.' ), self::manual_notes( $log ) ),
+		);
+	}
+
 	protected static function manual_notes( array $log ) {
 		$notes = array();
 		foreach ( $log as $row ) {
@@ -171,7 +194,8 @@ class CBX_Templates {
 		$results = array();
 		foreach ( self::posts_of( 'jet-engine' ) as $old ) {
 			if ( isset( $map[ $old->ID ] ) && get_post( $map[ $old->ID ]['id'] ) ) {
-				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ]['id'], 'title' => $old->post_title, 'state' => 'skipped', 'notes' => array( 'Redan migrerad.' ) );
+				$r         = self::refresh_template( $old->ID, $map[ $old->ID ]['id'], 'listing' );
+				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ]['id'], 'title' => $old->post_title, 'state' => $r['state'], 'notes' => $r['notes'] );
 				continue;
 			}
 			$notes = array();
@@ -216,7 +240,8 @@ class CBX_Templates {
 
 		foreach ( self::posts_of( 'jet-popup' ) as $old ) {
 			if ( isset( $map[ $old->ID ] ) && get_post( $map[ $old->ID ] ) ) {
-				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ], 'title' => $old->post_title, 'state' => 'skipped', 'notes' => array( 'Redan migrerad.' ) );
+				$r         = self::refresh_template( $old->ID, $map[ $old->ID ], 'popup' );
+				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ], 'title' => $old->post_title, 'state' => $r['state'], 'notes' => $r['notes'] );
 				continue;
 			}
 			$settings = (array) get_post_meta( $old->ID, '_elementor_page_settings', true );
@@ -295,7 +320,8 @@ class CBX_Templates {
 
 		foreach ( self::posts_of( 'jet-theme-core' ) as $old ) {
 			if ( isset( $map[ $old->ID ] ) && get_post( $map[ $old->ID ] ) ) {
-				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ], 'title' => $old->post_title, 'state' => 'skipped', 'notes' => array( 'Redan migrerad.' ) );
+				$r         = self::refresh_template( $old->ID, $map[ $old->ID ], 'theme' );
+				$results[] = array( 'from' => $old->ID, 'to' => $map[ $old->ID ], 'title' => $old->post_title, 'state' => $r['state'], 'notes' => $r['notes'] );
 				continue;
 			}
 			$jet_type = get_post_meta( $old->ID, '_elementor_template_type', true );
